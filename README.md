@@ -1,2 +1,2 @@
 # yapl
-Yet another personal lisp
+Yet another personal Lisp.
