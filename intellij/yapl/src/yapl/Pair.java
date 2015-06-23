@@ -30,11 +30,11 @@ public class Pair {
 
     public Iterable<Object> iterable() {
         return () -> new Iterator<Object>() {
-            private Object current = Pair.this;
+            private Pair current = Pair.this;
 
             @Override
             public boolean hasNext() {
-                if(current instanceof Pair && ((Pair)current).next != null)
+                if(current != null)
                     return true;
 
                 return false;
@@ -42,9 +42,9 @@ public class Pair {
 
             @Override
             public Object next() {
-                Object next1 = ((Pair)current).current;
-                current = ((Pair)current).next;
-                return next1;
+                Object next = current.current;
+                current = current.next;
+                return next;
             }
         };
     }

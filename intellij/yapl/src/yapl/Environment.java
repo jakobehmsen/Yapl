@@ -14,11 +14,7 @@ public class Environment {
 
     public Environment() { this(null); }
 
-    public void declare(String name) {
-        declare(name, null);
-    }
-
-    public void declare(String name, Object value) {
+    public void define(String name, Object value) {
         if(value == null)
             value = UNSET;
 
