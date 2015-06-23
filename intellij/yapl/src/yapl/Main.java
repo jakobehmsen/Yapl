@@ -6,22 +6,19 @@ public class Main {
     public static void main(String[] args) {
         Environment env = new Environment();
 
-        env.declare("apply");
-        env.set("apply", (BiConsumer<Evaluator, Pair>) (e, a) -> {
+        env.declare("apply", (BiConsumer<Evaluator, Pair>) (e, a) -> {
             Object item = a.current;
             Object arguments = a.next.current;
 
             e.apply(item, (Pair) arguments);
         });
 
-        env.declare("print");
-        env.set("print", (BiConsumer<Evaluator, Pair>) (e, a) -> {
+        env.declare("print", (BiConsumer<Evaluator, Pair>) (e, a) -> {
             System.out.print(a.current);
             e.popFrame(null);
         });
 
-        env.declare("test");
-        env.set("test", (BiConsumer<Evaluator, Pair>) (e, a) -> {
+        env.declare("test", (BiConsumer<Evaluator, Pair>) (e, a) -> {
             e.popFrame("Test");
         });
 

@@ -15,7 +15,14 @@ public class Environment {
     public Environment() { this(null); }
 
     public void declare(String name) {
-        locals.put(name, UNSET);
+        declare(name, null);
+    }
+
+    public void declare(String name, Object value) {
+        if(value == null)
+            value = UNSET;
+
+        locals.put(name, value);
     }
 
     public void set(String name, Object value) {
