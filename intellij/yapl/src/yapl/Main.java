@@ -51,6 +51,13 @@ public class Main {
             Pair.list("add", 1, 3)
         );*/
 
+        /*
+        (delimit (
+                (define lhs 1)
+                (define rhs 3)
+                (apply add)))
+        */
+
         Pair program = Pair.list(
             Pair.list("define", "add2", Pair.list(Pair.list("lhs"), Pair.list("add", Pair.list("get", "lhs"), 2))),
             Pair.list("add2", 1)
