@@ -26,15 +26,8 @@ public class Evaluator {
                     return (requester, signal) ->
                         co.resume(requester, args);
                 } else {
-                    return new CoRoutine() {
-                        Pair current;
-                        //CoRoutine current;
-
-                        @Override
-                        public void resume(CoRoutine requester, Object signal) {
-
-                        }
-                    };
+                    return (requester, signal) ->
+                        evaluateList(list, null, requester);
                 }
             }
         }
@@ -51,5 +44,14 @@ public class Evaluator {
                 responseHandler.accept(signal);
             }
         }, null);
+    }
+
+    public void evaluateList(Pair list, Object lastResult, CoRoutine requester) {
+        if(list == null)
+            requester.respond(lastResult);
+        else {
+            eval(list.current, result ->
+                evaluateList(list.next, result, requester));
+        }
     }
 }

@@ -163,7 +163,7 @@ public class Main {
             Pair.list("add2", 1)
         );
         */
-        Pair program = list("+", 1, 2
+        Pair program = list(
             /*
             Pair.list(
                 "define", "add2",
@@ -178,6 +178,8 @@ public class Main {
 
             /*list("define", "myFunc", list("fun", list("quote", list("*", 3, 7)))),
             list("myFunc")*/
+            list("+", 1, 2),
+            list("+", 1, 4)
         );
 
         /*Evaluator evaluator = new Evaluator(env, new Frame(null, result ->
