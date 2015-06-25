@@ -1,15 +1,14 @@
-package yaplrawargs;
+package yaplco;
 
-import java.io.InputStream;
-import java.util.PrimitiveIterator;
-import java.util.function.BiConsumer;
-import static yaplrawargs.Pair.list;
+import static yaplco.Pair.list;
 
 public class Main {
     public static void main(String[] args) {
         Environment env = new Environment();
 
         // Define primitives
+
+        /*
         env.define("quote", (e, a) ->
             e.popFrame(a.current));
 
@@ -45,6 +44,7 @@ public class Main {
                 e2.pushFrame(result -> e2.popFrame(result), l);
                 e2.evaluate(body);
             }));
+        */
 
 
         // A scan function should probably rather be a closure which juggles the user and it as a supplier
@@ -128,18 +128,24 @@ public class Main {
         */
 
 
-        env.defun("+", int.class, int.class, (e, lhs, rhs) -> e.popFrame(lhs + rhs));
-        env.defun("-", int.class, int.class, (e, lhs, rhs) -> e.popFrame(lhs - rhs));
-        env.defun("/", int.class, int.class, (e, lhs, rhs) -> e.popFrame(lhs / rhs));
-        env.defun("*", int.class, int.class, (e, lhs, rhs) -> e.popFrame(lhs * rhs));
+        env.defun("+", int.class, int.class, new PrimitiveCoroutine2<Integer, Integer>() {
+            @Override
+            public void accept(Evaluator evaluator, CoRoutine requester, Integer lhs, Integer rhs) {
+                requester.respond(lhs + rhs);
+            }
+        });
+        /*env.defun("+", int.class, int.class, (e, r, lhs, rhs) -> r);
+        env.defun("-", int.class, int.class, (co, lhs, rhs) -> e.popFrame(lhs - rhs));
+        env.defun("/", int.class, int.class, (co, lhs, rhs) -> e.popFrame(lhs / rhs));
+        env.defun("*", int.class, int.class, (co, lhs, rhs) -> e.popFrame(lhs * rhs));*/
 
-        env.defun("print", String.class, (e, str) -> {
+        /*env.defun("print", String.class, (e, str) -> {
             System.out.print(str);
             e.popFrame(null);
         });
 
         env.define("test", (e, a) ->
-            e.popFrame("Test"));
+            e.popFrame("Test"));*/
 
         /*Pair program = Pair.list(
             "print", "A string\n"
@@ -157,7 +163,7 @@ public class Main {
             Pair.list("add2", 1)
         );
         */
-        Pair program = list(
+        Pair program = list("+", 1, 2
             /*
             Pair.list(
                 "define", "add2",
@@ -170,14 +176,28 @@ public class Main {
             */
             //Pair.list("first", Pair.list("quote", Pair.list("First", "Second")))
 
-            list("define", "myFunc", list("fun", list("quote", list("*", 3, 7)))),
-            list("myFunc")
+            /*list("define", "myFunc", list("fun", list("quote", list("*", 3, 7)))),
+            list("myFunc")*/
         );
 
-        Evaluator evaluator = new Evaluator(env, new Frame(null, result ->
+        /*Evaluator evaluator = new Evaluator(env, new Frame(null, result ->
             System.out.println("Result: " + result),
             null));
+        evaluator.evaluate(program);*/
 
-        evaluator.evaluate(program);
+        Evaluator evaluator2 = new Evaluator(env);
+        CoRoutine coProgram = evaluator2.eval(program);
+        coProgram.resume(new CoCaller() {
+            @Override
+            public void resumeResponse(CoRoutine requester, Object signal) {
+                System.err.println("Response: " + signal);
+            }
+
+            @Override
+            public void resumeError(CoRoutine requester, Object signal) {
+                System.err.println("Error: " + signal);
+            }
+        }, null);
+
     }
 }
