@@ -128,12 +128,8 @@ public class Main {
         */
 
 
-        env.defun("+", int.class, int.class, new PrimitiveCoroutine2<Integer, Integer>() {
-            @Override
-            public void accept(Evaluator evaluator, CoRoutine requester, Integer lhs, Integer rhs) {
-                requester.respond(lhs + rhs);
-            }
-        });
+        env.defun("+", int.class, int.class, (evaluator, requester, lhs, rhs) ->
+            requester.respond(lhs + rhs));
         /*env.defun("+", int.class, int.class, (e, r, lhs, rhs) -> r);
         env.defun("-", int.class, int.class, (co, lhs, rhs) -> e.popFrame(lhs - rhs));
         env.defun("/", int.class, int.class, (co, lhs, rhs) -> e.popFrame(lhs / rhs));
