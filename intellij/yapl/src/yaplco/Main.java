@@ -182,11 +182,6 @@ public class Main {
             list("+", 1, 4)
         );
 
-        /*Evaluator evaluator = new Evaluator(env, new Frame(null, result ->
-            System.out.println("Result: " + result),
-            null));
-        evaluator.evaluate(program);*/
-
         Evaluator evaluator2 = new Evaluator(env);
         CoRoutine coProgram = evaluator2.eval(program);
         coProgram.resume(new CoCaller() {
