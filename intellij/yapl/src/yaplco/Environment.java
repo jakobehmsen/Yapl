@@ -18,6 +18,12 @@ public class Environment {
         define(name, (Object) function);
     }
 
+    public <T, R> void defun(String name, Class<T> arg0Type, PrimitiveCoroutine1<T> function) {
+        defun(name, (evaluator, requester, args) ->
+            evaluator.eval(args.current, arg0 ->
+                function.accept(evaluator, requester, (T) arg0)));
+    }
+
     public <T, R> void defun(String name, Class<T> arg0Type, Class<R> arg1Type, PrimitiveCoroutine2<T, R> function) {
         defun(name, (evaluator, requester, args) ->
             evaluator.eval(args.current, arg0 ->

@@ -1,5 +1,13 @@
 package yaplco;
 
+import java.io.*;
+import java.nio.CharBuffer;
+import java.util.ArrayList;
+import java.util.Scanner;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import static yaplco.Pair.list;
 
 public class Main {
@@ -127,6 +135,149 @@ public class Main {
             }));
         */
 
+        env.define("parse", new Primitive() {
+            @Override
+            public CoRoutine newCo(Evaluator evaluator) {
+                return new CoRoutine() {
+                    int index;
+                    Reader reader;
+                    StringBuffer buffer;
+                    boolean inited;
+
+                    @Override
+                    public void resume(CoRoutine requester, Object signal) {
+                        if(!inited) {
+                            evaluator.eval(((Pair) signal).current, arg0 -> {
+                                InputStream inputStream = (InputStream) arg0;
+                                reader = new InputStreamReader(inputStream);
+                                buffer = new StringBuffer();
+
+                                inited = true;
+
+                                ignore();
+                                resumeResponse(requester, null);
+                            });
+                        } else {
+                            if(!atEnd()) {
+                                Object next = next();
+                                ignore();
+                                requester.resumeResponse(this, Pair.list("next", next));
+                            } else
+                                requester.resumeResponse(this, Pair.list("atEnd"));
+                        }
+                    }
+
+                    Object next() {
+                        if(peek() == '(') {
+                            consume();
+                            ignore();
+
+                            Object next = nextList();
+                            if(peek() == ')') {
+                                consume();
+                                ignore();
+
+                                return next;
+                            } else {
+                                // ERROR
+                            }
+                        } else if(Character.isDigit(peek())) {
+                            StringBuffer digits = new StringBuffer();
+                            digits.append(peek());
+                            consume();
+
+                            while(Character.isDigit(peek())) {
+                                digits.append(peek());
+                                consume();
+                            }
+
+                            return Integer.parseInt(digits.toString());
+                        } else if(Character.isJavaIdentifierPart(peek())) {
+                            StringBuffer parts = new StringBuffer();
+                            parts.append(peek());
+                            consume();
+
+                            while(Character.isJavaIdentifierPart(peek())) {
+                                parts.append(peek());
+                                consume();
+                            }
+
+                            return parts.toString();
+                        } else if(peek() == '"') {
+                            consume();
+
+                            StringBuffer chars = new StringBuffer();
+
+                            while(true) {
+                                if(peek() == '"') {
+                                    consume();
+                                    break;
+                                }
+                                // Check character escapes
+
+                                chars.append(peek());
+                                consume();
+                            }
+
+                            return chars.toString();
+                        }
+
+                        return null;
+                    }
+
+                    Pair nextList() {
+                        ArrayList<Object> items = new ArrayList<>();
+
+                        while(!atEnd()) {
+                            Object next = next();
+                            if(next != null) {
+                                items.add(next);
+                                ignore();
+                            } else
+                                break;
+                        }
+
+                        return Pair.list(items);
+                    }
+
+                    void consume() {
+                        index++;
+                    }
+
+                    boolean atEnd() {
+                        ensureBuffered();
+
+                        return index >= buffer.length();
+                    }
+
+                    void ensureBuffered() {
+                        if (index >= buffer.length()) {
+                            try {
+                                CharBuffer readChars = CharBuffer.allocate(1024);
+                                int readCharCount = reader.read(readChars);
+                                if(readCharCount > 0) {
+                                    readChars.position(0);
+                                    buffer.append(readChars, 0, readCharCount);
+                                }
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+
+                    char peek() {
+                        ensureBuffered();
+
+                        return !atEnd() ? buffer.charAt(index) : '\0';
+                    }
+
+                    void ignore() {
+                        while (!atEnd() && Character.isWhitespace(peek()))
+                            consume();
+                    }
+                };
+            }
+        });
 
         env.defun("+", int.class, int.class, (evaluator, requester, lhs, rhs) ->
             requester.respond(lhs + rhs));
@@ -159,6 +310,38 @@ public class Main {
             Pair.list("add2", 1)
         );
         */
+
+        String src = "( 11 (234 2)43 43)";
+        CoRoutine coParse = new Evaluator(env).eval(list("parse", new ByteArrayInputStream(src.getBytes())));
+
+        new CoRoutine() {
+            @Override
+            public void resume(CoRoutine requester, Object signal) {
+                // Parse next
+                coParse.resume(this, null);
+            }
+
+            @Override
+            public void resumeResponse(CoRoutine requester, Object signal) {
+                if(signal != null && signal instanceof Pair) {
+                    Pair signalAsPair = (Pair)signal;
+
+                    if(signalAsPair.current.equals("next")) {
+                        Object next = signalAsPair.next.current;
+                        System.out.println(next);
+
+                        // Parse next
+                        requester.resume(this, null);
+                    } else if(signalAsPair.current.equals("atEnd")) {
+
+                    }
+                } else {
+                    // Parse next
+                    requester.resume(this, null);
+                }
+            }
+        }.resume(null, null);
+
         Pair program = list(
             /*
             Pair.list(

@@ -3,6 +3,7 @@ package yaplco;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -51,5 +52,10 @@ public class Pair {
 
     public Stream<Object> stream() {
         return StreamSupport.stream(iterable().spliterator(), false);
+    }
+
+    @Override
+    public String toString() {
+        return stream().collect(Collectors.toList()).toString();
     }
 }
