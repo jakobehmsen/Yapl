@@ -9,7 +9,8 @@ public class Evaluator {
         this.environment = environment;
     }
 
-    public CoRoutine eval(Object item) {
+    public CoRoutine eval(Scheduler scheduler, Object item) {
+        // Somehow, co-routines shouldn't be called directly but instead requested for execution paired with a signal
         if(item != null) {
             if(item instanceof Pair) {
                 Pair list = (Pair) item;
@@ -21,13 +22,13 @@ public class Evaluator {
 
                     CoRoutine co = function instanceof Primitive
                         ? ((Primitive)function).newCo(this)
-                        : eval(function);
+                        : eval(scheduler, function);
 
                     return (requester, signal) ->
                         co.resume(requester, args);
                 } else {
                     return (requester, signal) ->
-                        evaluateList(list, null, requester);
+                        evaluateList(scheduler, list, null, requester);
                 }
             }
         }
@@ -36,8 +37,8 @@ public class Evaluator {
             requester.respond(item);
     }
 
-    public void eval(Object item, Consumer<Object> responseHandler) {
-        CoRoutine evaluation = eval(item);
+    public void eval(Scheduler scheduler, Object item, Consumer<Object> responseHandler) {
+        CoRoutine evaluation = eval(scheduler, item);
         evaluation.resume(new CoCaller() {
             @Override
             public void resumeResponse(CoRoutine requester, Object signal) {
@@ -46,12 +47,13 @@ public class Evaluator {
         }, null);
     }
 
-    public void evaluateList(Pair list, Object lastResult, CoRoutine requester) {
+    public void evaluateList(Scheduler scheduler, Pair list, Object lastResult, CoRoutine requester) {
         if(list == null)
-            requester.respond(lastResult);
+            //requester.respond(lastResult);
+            scheduler.respond(requester, lastResult);
         else {
-            eval(list.current, result ->
-                evaluateList(list.next, result, requester));
+            eval(scheduler, list.current, result ->
+                evaluateList(scheduler, list.next, result, requester));
         }
     }
 }

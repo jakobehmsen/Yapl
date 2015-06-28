@@ -3,10 +3,6 @@ package yaplco;
 import java.io.*;
 import java.nio.CharBuffer;
 import java.util.ArrayList;
-import java.util.Scanner;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static yaplco.Pair.list;
 
@@ -135,6 +131,8 @@ public class Main {
             }));
         */
 
+        Scheduler scheduler = null;
+
         env.define("parse", new Primitive() {
             @Override
             public CoRoutine newCo(Evaluator evaluator) {
@@ -147,7 +145,7 @@ public class Main {
                     @Override
                     public void resume(CoRoutine requester, Object signal) {
                         if(!inited) {
-                            evaluator.eval(((Pair) signal).current, arg0 -> {
+                            evaluator.eval(scheduler, ((Pair) signal).current, arg0 -> {
                                 InputStream inputStream = (InputStream) arg0;
                                 reader = new InputStreamReader(inputStream);
                                 buffer = new StringBuffer();
@@ -312,7 +310,7 @@ public class Main {
         */
 
         String src = "( 11 (234 2)43 43)";
-        CoRoutine coParse = new Evaluator(env).eval(list("parse", new ByteArrayInputStream(src.getBytes())));
+        CoRoutine coParse = new Evaluator(env).eval(scheduler, list("parse", new ByteArrayInputStream(src.getBytes())));
 
         new CoRoutine() {
             @Override
@@ -362,7 +360,7 @@ public class Main {
         );
 
         Evaluator evaluator2 = new Evaluator(env);
-        CoRoutine coProgram = evaluator2.eval(program);
+        CoRoutine coProgram = evaluator2.eval(scheduler, program);
         coProgram.resume(new CoCaller() {
             @Override
             public void resumeResponse(CoRoutine requester, Object signal) {
