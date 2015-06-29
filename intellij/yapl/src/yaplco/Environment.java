@@ -19,27 +19,27 @@ public class Environment {
     }
 
     public <T, R> void defun(String name, Class<T> arg0Type, PrimitiveCoroutine1<T> function) {
-        defun(name, (evaluator, requester, args) ->
+        defun(name, (scheduler, evaluator, requester, args) ->
             evaluator.eval(scheduler, args.current, arg0 ->
-                function.accept(evaluator, requester, (T) arg0)));
+                function.accept(scheduler, evaluator, requester, (T) arg0)));
     }
 
     public <T, R> void defun(String name, Class<T> arg0Type, Class<R> arg1Type, PrimitiveCoroutine2<T, R> function) {
-        defun(name, (evaluator, requester, args) ->
+        defun(name, (scheduler, evaluator, requester, args) ->
             evaluator.eval(scheduler, args.current, arg0 ->
                 evaluator.eval(scheduler, args.next.current, arg1 ->
-                    function.accept(evaluator, requester, (T) arg0, (R) arg1))));
+                    function.accept(scheduler, evaluator, requester, (T) arg0, (R) arg1))));
     }
 
     public <T, R> void defun(String name, PrimitiveCoroutine function) {
         define(name, new Primitive() {
             @Override
-            public CoRoutine newCo(Evaluator evaluator) {
-                return new CoRoutine() {
+            public CoRoutine newCo(Scheduler scheduler, Evaluator evaluator) {
+                return new CoRoutineImpl() {
                     @Override
                     public void resume(CoRoutine requester, Object signal) {
                         Pair signalAsPair = (Pair)signal;
-                        function.accept(evaluator, requester, signalAsPair);
+                        function.accept(scheduler, evaluator, requester, signalAsPair);
                     }
                 };
             }

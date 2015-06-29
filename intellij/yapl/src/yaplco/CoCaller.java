@@ -1,6 +1,6 @@
 package yaplco;
 
-public abstract class CoCaller implements CoRoutine {
+public abstract class CoCaller implements CoRoutineImpl {
     @Override
     public void resume(CoRoutine requester, Object signal) {
         // Add default error handling and signal reification

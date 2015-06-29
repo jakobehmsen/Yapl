@@ -1,6 +1,6 @@
 package yaplco;
 
-public interface CoRoutine {
+public interface CoRoutineImpl extends CoRoutine {
     /*default void respond(Object signal) {
         //resume(END, Pair.list("response", signal));
         resumeResponse(END, signal);
@@ -9,7 +9,7 @@ public interface CoRoutine {
     default void error(Object signal) {
         //resume(END, Pair.list("response", signal));
         resumeError(END, signal);
-    }
+    }*/
 
     // Can be overridden to avoid reification of response
     default void resumeResponse(CoRoutine requester, Object signal) {
@@ -23,7 +23,7 @@ public interface CoRoutine {
 
     void resume(CoRoutine requester, Object signal);
 
-    CoRoutine END = new CoRoutine() {
+    /*CoRoutine END = new CoRoutine() {
         @Override
         public void resume(CoRoutine requester, Object signal) {
             requester.resume(this, Pair.list("end"));

@@ -131,12 +131,12 @@ public class Main {
             }));
         */
 
-        Scheduler scheduler = null;
+        Scheduler scheduler = new Scheduler();
 
         env.define("parse", new Primitive() {
             @Override
-            public CoRoutine newCo(Evaluator evaluator) {
-                return new CoRoutine() {
+            public CoRoutine newCo(Scheduler scheduler, Evaluator evaluator) {
+                return new CoRoutineImpl() {
                     int index;
                     Reader reader;
                     StringBuffer buffer;
@@ -153,15 +153,18 @@ public class Main {
                                 inited = true;
 
                                 ignore();
-                                resumeResponse(requester, null);
+                                scheduler.resumeResponse(this, requester, null);
+                                //resumeResponse(requester, null);
                             });
                         } else {
                             if(!atEnd()) {
                                 Object next = next();
                                 ignore();
-                                requester.resumeResponse(this, Pair.list("next", next));
+                                scheduler.resumeResponse(this, requester, Pair.list("next", next));
+                                //requester.resumeResponse(this, Pair.list("next", next));
                             } else
-                                requester.resumeResponse(this, Pair.list("atEnd"));
+                                scheduler.resumeResponse(this, requester, Pair.list("atEnd"));
+                                //requester.resumeResponse(this, Pair.list("atEnd"));
                         }
                     }
 
@@ -277,8 +280,9 @@ public class Main {
             }
         });
 
-        env.defun("+", int.class, int.class, (evaluator, requester, lhs, rhs) ->
-            requester.respond(lhs + rhs));
+        env.defun("+", int.class, int.class, (s, evaluator, requester, lhs, rhs) ->
+            s.respond(requester, lhs + rhs));
+            //requester.respond(lhs + rhs));
         /*env.defun("+", int.class, int.class, (e, r, lhs, rhs) -> r);
         env.defun("-", int.class, int.class, (co, lhs, rhs) -> e.popFrame(lhs - rhs));
         env.defun("/", int.class, int.class, (co, lhs, rhs) -> e.popFrame(lhs / rhs));
@@ -312,33 +316,38 @@ public class Main {
         String src = "( 11 (234 2)43 43)";
         CoRoutine coParse = new Evaluator(env).eval(scheduler, list("parse", new ByteArrayInputStream(src.getBytes())));
 
-        new CoRoutine() {
-            @Override
-            public void resume(CoRoutine requester, Object signal) {
-                // Parse next
-                coParse.resume(this, null);
-            }
-
-            @Override
-            public void resumeResponse(CoRoutine requester, Object signal) {
-                if(signal != null && signal instanceof Pair) {
-                    Pair signalAsPair = (Pair)signal;
-
-                    if(signalAsPair.current.equals("next")) {
-                        Object next = signalAsPair.next.current;
-                        System.out.println(next);
-
-                        // Parse next
-                        requester.resume(this, null);
-                    } else if(signalAsPair.current.equals("atEnd")) {
-
-                    }
-                } else {
+        scheduler.respond(
+            new CoRoutineImpl() {
+                @Override
+                public void resume(CoRoutine requester, Object signal) {
                     // Parse next
-                    requester.resume(this, null);
+                    scheduler.resume(this, coParse, null);
+                    //coParse.resume(this, null);
                 }
-            }
-        }.resume(null, null);
+
+                @Override
+                public void resumeResponse(CoRoutine requester, Object signal) {
+                    if(signal != null && signal instanceof Pair) {
+                        Pair signalAsPair = (Pair)signal;
+
+                        if(signalAsPair.current.equals("next")) {
+                            Object next = signalAsPair.next.current;
+                            System.out.println(next);
+
+                            // Parse next
+                            scheduler.resume(this, coParse, null);
+                            //requester.resume(this, null);
+                        } else if(signalAsPair.current.equals("atEnd")) {
+
+                        }
+                    } else {
+                        // Parse next
+                        scheduler.resume(this, coParse, null);
+                        //requester.resume(this, null);
+                    }
+                }
+            }, null
+        );
 
         Pair program = list(
             /*
@@ -361,7 +370,7 @@ public class Main {
 
         Evaluator evaluator2 = new Evaluator(env);
         CoRoutine coProgram = evaluator2.eval(scheduler, program);
-        coProgram.resume(new CoCaller() {
+        scheduler.resume(new CoCaller() {
             @Override
             public void resumeResponse(CoRoutine requester, Object signal) {
                 System.err.println("Response: " + signal);
@@ -371,7 +380,7 @@ public class Main {
             public void resumeError(CoRoutine requester, Object signal) {
                 System.err.println("Error: " + signal);
             }
-        }, null);
+        }, coProgram, null);
 
     }
 }

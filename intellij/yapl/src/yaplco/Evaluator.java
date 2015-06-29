@@ -21,30 +21,42 @@ public class Evaluator {
                     Object function = environment.get(operator);
 
                     CoRoutine co = function instanceof Primitive
-                        ? ((Primitive)function).newCo(this)
+                        ? ((Primitive)function).newCo(scheduler, this)
                         : eval(scheduler, function);
 
-                    return (requester, signal) ->
-                        co.resume(requester, args);
+                    return (CoRoutineImpl) (requester, signal) ->
+                        //co.resume(requester, args);
+                        scheduler.resume(requester, co, args);
                 } else {
-                    return (requester, signal) ->
+                    return (CoRoutineImpl) (requester, signal) ->
                         evaluateList(scheduler, list, null, requester);
                 }
             }
         }
 
-        return (requester, signal) ->
-            requester.respond(item);
+        return (CoRoutineImpl) (requester, signal) ->
+            scheduler.respond(requester, item);
+
+        /*return (requester, signal) ->
+            scheduler.respond(requester, item);
+            //requester.respond(item);
+            */
     }
 
     public void eval(Scheduler scheduler, Object item, Consumer<Object> responseHandler) {
         CoRoutine evaluation = eval(scheduler, item);
-        evaluation.resume(new CoCaller() {
+        scheduler.resume(new CoCaller() {
             @Override
             public void resumeResponse(CoRoutine requester, Object signal) {
                 responseHandler.accept(signal);
             }
-        }, null);
+        }, evaluation, null);
+        /*evaluation.resume(new CoCaller() {
+            @Override
+            public void resumeResponse(CoRoutine requester, Object signal) {
+                responseHandler.accept(signal);
+            }
+        }, null);*/
     }
 
     public void evaluateList(Scheduler scheduler, Pair list, Object lastResult, CoRoutine requester) {
