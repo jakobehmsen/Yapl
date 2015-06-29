@@ -1,5 +1,9 @@
 package yaplco;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Stack;
+
 public class Scheduler {
     private CoRoutineImpl END = new CoRoutineImpl() {
     @Override
@@ -12,7 +16,10 @@ public class Scheduler {
     private Runnable pending;
 
     public void schedule(Runnable task) {
-        pending = task;
+        if(pending != null) {
+            pending = sync(pending, task);
+        } else
+            pending = task;
 
         if(!running) {
             running = true;
@@ -25,6 +32,18 @@ public class Scheduler {
 
             running = false;
         }
+    }
+
+    private Runnable sync(Runnable first, Runnable second) {
+        return () -> {
+            first.run();
+            this.schedule(second);
+        };
+    }
+
+    public Runnable resumeTask(CoRoutine requester, CoRoutine target, Object signal) {
+        return () ->
+            ((CoRoutineImpl) target).resume(requester, signal);
     }
 
     public void resume(CoRoutine requester, CoRoutine target, Object signal) {

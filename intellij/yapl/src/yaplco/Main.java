@@ -147,24 +147,20 @@ public class Main {
                         if(!inited) {
                             evaluator.eval(scheduler, ((Pair) signal).current, arg0 -> {
                                 InputStream inputStream = (InputStream) arg0;
-                                reader = new InputStreamReader(inputStream);
+                                reader = new BufferedReader(new InputStreamReader(inputStream));
                                 buffer = new StringBuffer();
 
                                 inited = true;
 
-                                ignore();
                                 scheduler.resumeResponse(this, requester, null);
-                                //resumeResponse(requester, null);
                             });
                         } else {
+                            ignore();
                             if(!atEnd()) {
                                 Object next = next();
-                                ignore();
                                 scheduler.resumeResponse(this, requester, Pair.list("next", next));
-                                //requester.resumeResponse(this, Pair.list("next", next));
                             } else
                                 scheduler.resumeResponse(this, requester, Pair.list("atEnd"));
-                                //requester.resumeResponse(this, Pair.list("atEnd"));
                         }
                     }
 
@@ -176,7 +172,6 @@ public class Main {
                             Object next = nextList();
                             if(peek() == ')') {
                                 consume();
-                                ignore();
 
                                 return next;
                             } else {
@@ -193,17 +188,6 @@ public class Main {
                             }
 
                             return Integer.parseInt(digits.toString());
-                        } else if(Character.isJavaIdentifierPart(peek())) {
-                            StringBuffer parts = new StringBuffer();
-                            parts.append(peek());
-                            consume();
-
-                            while(Character.isJavaIdentifierPart(peek())) {
-                                parts.append(peek());
-                                consume();
-                            }
-
-                            return parts.toString();
                         } else if(peek() == '"') {
                             consume();
 
@@ -221,9 +205,25 @@ public class Main {
                             }
 
                             return chars.toString();
+                        } else if(isIdentifierPart(peek())) {
+                            StringBuffer parts = new StringBuffer();
+                            parts.append(peek());
+                            consume();
+
+                            while(isIdentifierPart(peek())) {
+                                parts.append(peek());
+                                consume();
+                            }
+
+                            return parts.toString();
                         }
 
                         return null;
+                    }
+
+                    boolean isIdentifierPart(char ch) {
+                        //return Character.isJavaIdentifierPart(ch);
+                        return !Character.isWhitespace(ch) && ch != ')';
                     }
 
                     Pair nextList() {
@@ -313,8 +313,15 @@ public class Main {
         );
         */
 
-        String src = "( 11 (234 2)43 43)";
-        CoRoutine coParse = new Evaluator(env).eval(scheduler, list("parse", new ByteArrayInputStream(src.getBytes())));
+        Evaluator evaluator2 = new Evaluator(env);
+
+        //String src = "( 11 (234 2)43 43)";
+        //String src = "(  \"A string\" 1 2 33 (quote some stuff) )";
+        String src = "(+ 1 2) (+  344343 66  )";
+        //InputStream srcInputStream = new ByteArrayInputStream(src.getBytes());
+
+        InputStream srcInputStream = System.in;
+        CoRoutine coParse = new Evaluator(env).eval(scheduler, list("parse", srcInputStream));
 
         scheduler.respond(
             new CoRoutineImpl() {
@@ -322,31 +329,52 @@ public class Main {
                 public void resume(CoRoutine requester, Object signal) {
                     // Parse next
                     scheduler.resume(this, coParse, null);
-                    //coParse.resume(this, null);
                 }
 
                 @Override
                 public void resumeResponse(CoRoutine requester, Object signal) {
-                    if(signal != null && signal instanceof Pair) {
-                        Pair signalAsPair = (Pair)signal;
+                    if (signal != null && signal instanceof Pair) {
+                        Pair signalAsPair = (Pair) signal;
 
-                        if(signalAsPair.current.equals("next")) {
+                        if (signalAsPair.current.equals("next")) {
                             Object next = signalAsPair.next.current;
-                            System.out.println(next);
+                            scheduler.schedule(() -> System.out.println("Next to evaluate: " + next));
+
+                            Object program = next;
+                            CoRoutine coProgram = evaluator2.eval(scheduler, program);
+
+                            scheduler.resume(new CoCaller() {
+                                @Override
+                                public void resumeResponse(CoRoutine requester, Object signal) {
+                                    System.out.println("=> " + signal);
+                                    System.out.flush();
+                                }
+
+                                @Override
+                                public void resumeError(CoRoutine requester, Object signal) {
+                                    System.err.println("Error: " + signal);
+                                    System.out.flush();
+                                }
+                            }, coProgram, null);
 
                             // Parse next
+                            scheduler.schedule(() -> System.out.print(">> "));
                             scheduler.resume(this, coParse, null);
-                            //requester.resume(this, null);
-                        } else if(signalAsPair.current.equals("atEnd")) {
+                        } else if (signalAsPair.current.equals("atEnd")) {
 
                         }
                     } else {
-                        // Parse next
-                        scheduler.resume(this, coParse, null);
-                        //requester.resume(this, null);
+                        if(signal != null && signal.equals("Start")) {
+                            System.out.println("Yapl repl:");
+                            scheduler.resume(this, coParse, null);
+                        } else {
+                            // Parse next
+                            scheduler.schedule(() -> System.out.print(">> "));
+                            scheduler.resume(this, coParse, null);
+                        }
                     }
                 }
-            }, null
+            }, "Start"
         );
 
         Pair program = list(
@@ -368,12 +396,11 @@ public class Main {
             list("+", 1, 4)
         );
 
-        Evaluator evaluator2 = new Evaluator(env);
         CoRoutine coProgram = evaluator2.eval(scheduler, program);
         scheduler.resume(new CoCaller() {
             @Override
             public void resumeResponse(CoRoutine requester, Object signal) {
-                System.err.println("Response: " + signal);
+                System.out.println("Response: " + signal);
             }
 
             @Override
