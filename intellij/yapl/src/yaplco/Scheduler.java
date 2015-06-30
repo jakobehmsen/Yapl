@@ -1,14 +1,10 @@
 package yaplco;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Stack;
-
 public class Scheduler {
     private CoRoutineImpl END = new CoRoutineImpl() {
     @Override
         public void resume(CoRoutine requester, Object signal) {
-            Scheduler.this.resume(this, requester, Pair.list("end"));
+
         }
     };
 

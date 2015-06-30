@@ -318,13 +318,16 @@ public class Main {
         //String src = "( 11 (234 2)43 43)";
         //String src = "(  \"A string\" 1 2 33 (quote some stuff) )";
         String src = "(+ 1 2) (+  344343 66  )";
-        //InputStream srcInputStream = new ByteArrayInputStream(src.getBytes());
+        InputStream srcInputStream = new ByteArrayInputStream(src.getBytes());
 
-        InputStream srcInputStream = System.in;
+        //InputStream srcInputStream = System.in;
         CoRoutine coParse = new Evaluator(env).eval(scheduler, list("parse", srcInputStream));
 
         scheduler.respond(
             new CoRoutineImpl() {
+                CoRoutineImpl parseHandler = this;
+                CoRoutine parseRequester;
+
                 @Override
                 public void resume(CoRoutine requester, Object signal) {
                     // Parse next
@@ -338,12 +341,31 @@ public class Main {
 
                         if (signalAsPair.current.equals("next")) {
                             Object next = signalAsPair.next.current;
-                            scheduler.schedule(() -> System.out.println("Next to evaluate: " + next));
+                            System.out.println("Next to evaluate: " + next);
+                            //scheduler.schedule(() -> System.out.println("Next to evaluate: " + next));
 
                             Object program = next;
                             CoRoutine coProgram = evaluator2.eval(scheduler, program);
 
                             scheduler.resume(new CoCaller() {
+                                @Override
+                                public void resumeResponse(CoRoutine requester, Object signal) {
+                                    System.out.println("=> " + signal);
+                                    System.out.flush();
+
+                                    // Parse next
+                                    System.out.print(">> ");
+                                    scheduler.resume(parseHandler, coParse, null);
+                                }
+
+                                @Override
+                                public void resumeError(CoRoutine requester, Object signal) {
+                                    System.err.println("Error: " + signal);
+                                    System.out.flush();
+                                }
+                            }, coProgram, null);
+
+                            /*scheduler.resume(new CoCaller() {
                                 @Override
                                 public void resumeResponse(CoRoutine requester, Object signal) {
                                     System.out.println("=> " + signal);
@@ -359,17 +381,19 @@ public class Main {
 
                             // Parse next
                             scheduler.schedule(() -> System.out.print(">> "));
-                            scheduler.resume(this, coParse, null);
+                            scheduler.resume(this, coParse, null);*/
                         } else if (signalAsPair.current.equals("atEnd")) {
-
+                            scheduler.respond(parseRequester, "atEnd");
                         }
                     } else {
                         if(signal != null && signal.equals("Start")) {
+                            parseRequester = requester;
                             System.out.println("Yapl repl:");
                             scheduler.resume(this, coParse, null);
                         } else {
                             // Parse next
-                            scheduler.schedule(() -> System.out.print(">> "));
+                            //scheduler.schedule(() -> System.out.print(">> "));
+                            System.out.print(">> ");
                             scheduler.resume(this, coParse, null);
                         }
                     }
