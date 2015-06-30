@@ -324,15 +324,9 @@ public class Main {
         CoRoutine coParse = new Evaluator(env).eval(scheduler, list("parse", srcInputStream));
 
         scheduler.respond(
-            new CoRoutineImpl() {
+            new CoCaller() {
                 CoRoutineImpl parseHandler = this;
                 CoRoutine parseRequester;
-
-                @Override
-                public void resume(CoRoutine requester, Object signal) {
-                    // Parse next
-                    scheduler.resume(this, coParse, null);
-                }
 
                 @Override
                 public void resumeResponse(CoRoutine requester, Object signal) {
@@ -342,7 +336,6 @@ public class Main {
                         if (signalAsPair.current.equals("next")) {
                             Object next = signalAsPair.next.current;
                             System.out.println("Next to evaluate: " + next);
-                            //scheduler.schedule(() -> System.out.println("Next to evaluate: " + next));
 
                             Object program = next;
                             CoRoutine coProgram = evaluator2.eval(scheduler, program);
@@ -364,24 +357,6 @@ public class Main {
                                     System.out.flush();
                                 }
                             }, coProgram, null);
-
-                            /*scheduler.resume(new CoCaller() {
-                                @Override
-                                public void resumeResponse(CoRoutine requester, Object signal) {
-                                    System.out.println("=> " + signal);
-                                    System.out.flush();
-                                }
-
-                                @Override
-                                public void resumeError(CoRoutine requester, Object signal) {
-                                    System.err.println("Error: " + signal);
-                                    System.out.flush();
-                                }
-                            }, coProgram, null);
-
-                            // Parse next
-                            scheduler.schedule(() -> System.out.print(">> "));
-                            scheduler.resume(this, coParse, null);*/
                         } else if (signalAsPair.current.equals("atEnd")) {
                             scheduler.respond(parseRequester, "atEnd");
                         }
@@ -392,7 +367,6 @@ public class Main {
                             scheduler.resume(this, coParse, null);
                         } else {
                             // Parse next
-                            //scheduler.schedule(() -> System.out.print(">> "));
                             System.out.print(">> ");
                             scheduler.resume(this, coParse, null);
                         }

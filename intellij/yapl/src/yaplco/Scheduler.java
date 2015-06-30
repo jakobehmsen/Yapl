@@ -12,10 +12,10 @@ public class Scheduler {
     private Runnable pending;
 
     public void schedule(Runnable task) {
-        if(pending != null) {
-            pending = sync(pending, task);
-        } else
-            pending = task;
+        if(pending != null)
+            throw new RuntimeException("Task already scheduled in scheduler.");
+
+        pending = task;
 
         if(!running) {
             running = true;
@@ -28,13 +28,6 @@ public class Scheduler {
 
             running = false;
         }
-    }
-
-    private Runnable sync(Runnable first, Runnable second) {
-        return () -> {
-            first.run();
-            this.schedule(second);
-        };
     }
 
     public Runnable resumeTask(CoRoutine requester, CoRoutine target, Object signal) {
