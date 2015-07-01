@@ -1,8 +1,11 @@
 package yaplco;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.nio.CharBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static yaplco.Pair.list;
 
@@ -287,6 +290,117 @@ public class Main {
         env.defun("-", int.class, int.class, (co, lhs, rhs) -> e.popFrame(lhs - rhs));
         env.defun("/", int.class, int.class, (co, lhs, rhs) -> e.popFrame(lhs / rhs));
         env.defun("*", int.class, int.class, (co, lhs, rhs) -> e.popFrame(lhs * rhs));*/
+
+        // co wraps an expression such that variable co-routines are supported during request/response logic
+        // Can this primitive be implemented in a custom way
+        env.define("co", new Primitive() {
+            @Override
+            public CoRoutine newCo(Scheduler scheduler, Evaluator evaluator) {
+                return new CoRoutineImpl() {
+                    @Override
+                    public void resume(CoRoutine requester, Object signal) {
+                        Object item = ((Pair)signal).current;
+                        CoRoutine signalAsCo = evaluator.eval(scheduler, item);
+
+                        CoRoutine co = new CoRoutineImpl() {
+                            CoRoutine current = signalAsCo;
+                            CoRoutine currentRequester;
+                            boolean handlingRequest;
+
+                            @Override
+                            public void resume(CoRoutine requester, Object signal) {
+                                if(!handlingRequest) {
+                                    currentRequester = requester;
+                                    handlingRequest = true;
+                                    scheduler.resume(this, current, signal);
+                                    current = null;
+                                } else {
+                                    current = requester;
+                                    handlingRequest = false;
+                                    scheduler.resume(this, currentRequester, signal);
+                                    currentRequester = null;
+                                }
+                            }
+                        };
+
+                        scheduler.respond(requester, co);
+                    }
+
+                    @Override
+                    public void resumeError(CoRoutine requester, Object signal) {
+
+                    }
+                };
+            }
+        });
+
+        // A list co routine that doesn't return the same routine multiple times
+        env.define("aList", new Primitive() {
+            @Override
+            public CoRoutine newCo(Scheduler scheduler, Evaluator evaluator) {
+                return new CoRoutineImpl() {
+                    private List<Object> list = Arrays.asList(1, 2, 3, 4, 5);
+
+                    @Override
+                    public void resume(CoRoutine requester, Object signal) {
+                        provide(requester, 0, list);
+                    }
+
+                    private void provide(CoRoutine requester, int index, List<Object> list) {
+                        if(index < list.size()) {
+                            Object next = list.get(index);
+                            scheduler.respond(new CoCaller() {
+                                @Override
+                                public void resumeResponse(CoRoutine requester, Object signal) {
+                                    provide(requester, index + 1, list);
+                                }
+                            }, requester, list("next", next));
+                        } else {
+                            scheduler.respond(requester, "end");
+                        }
+                    }
+                };
+            }
+        });
+
+        // An example of using co with an expression for which new coroutine instances are created for each response
+        CoRoutine coListCode = new Evaluator(env).eval(scheduler, list("co", list("aList")));
+
+        scheduler.respond(new CoCaller() {
+            CoRoutine coList;
+
+            @Override
+            public void resumeResponse(CoRoutine requester, Object signal) {
+                scheduler.respond(new CoCaller() {
+                    @Override
+                    public void resumeResponse(CoRoutine requester, Object signal) {
+                        coList = (CoRoutine)signal;
+
+                        scheduler.respond(new CoCaller() {
+                            @Override
+                            public void resumeResponse(CoRoutine requester, Object signal) {
+                                handleNext(signal);
+                            }
+                        }, coList, null);
+                    }
+                }, coListCode, null);
+            }
+
+            private void handleNext(Object signal) {
+                if(signal instanceof Pair && ((Pair)signal).current.equals("next")) {
+                    System.out.println("Next in list: " + ((Pair)signal).next.current);
+
+                    scheduler.respond(new CoCaller() {
+                        @Override
+                        public void resumeResponse(CoRoutine requester, Object signal) {
+                            handleNext(signal);
+                        }
+                    }, coList, null);
+                } else if(signal.equals("end")) {
+                    System.out.println("No more in list.");
+                }
+            }
+        }, "start");
 
         /*env.defun("print", String.class, (e, str) -> {
             System.out.print(str);
