@@ -50,6 +50,20 @@ public class Scheduler {
             ((CoRoutineImpl) target).resumeResponse(requester, signal));
     }
 
+    public void resumeError(CoRoutine requester, CoRoutine target, Object signal) {
+        schedule(() ->
+            ((CoRoutineImpl) target).resumeError(requester, signal));
+    }
+
+    public void resumeOther(CoRoutine requester, CoRoutine target, Object signal) {
+        schedule(() ->
+            ((CoRoutineImpl) target).resumeOther(requester, signal));
+    }
+
+    public void resumeOther(CoRoutine target, Object signal) {
+        resumeOther(END, target, signal);
+    }
+
     public void respond(CoRoutine target, Object signal) {
         respond(END, target, signal);
     }

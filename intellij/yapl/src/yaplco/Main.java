@@ -1,7 +1,6 @@
 package yaplco;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -148,7 +147,7 @@ public class Main {
                     @Override
                     public void resume(CoRoutine requester, Object signal) {
                         if(!inited) {
-                            evaluator.eval(scheduler, ((Pair) signal).current, arg0 -> {
+                            evaluator.eval(scheduler, ((Pair) signal).current, requester, arg0 -> {
                                 InputStream inputStream = (InputStream) arg0;
                                 reader = new BufferedReader(new InputStreamReader(inputStream));
                                 buffer = new StringBuffer();
@@ -283,6 +282,17 @@ public class Main {
             }
         });
 
+        env.define("quote", new Primitive() {
+            @Override
+            public CoRoutine newCo(Scheduler scheduler, Evaluator evaluator) {
+                return (CoRoutineImpl) (requester, signal) ->
+                    scheduler.respond(requester, signal);
+            }
+        });
+
+        env.defun("resume", int.class, int.class, (s, evaluator, requester, lhs, rhs) ->
+            s.respond(requester, lhs + rhs));
+
         env.defun("+", int.class, int.class, (s, evaluator, requester, lhs, rhs) ->
             s.respond(requester, lhs + rhs));
             //requester.respond(lhs + rhs));
@@ -349,51 +359,70 @@ public class Main {
                     private void provide(CoRoutine requester, int index, List<Object> list) {
                         if(index < list.size()) {
                             Object next = list.get(index);
-                            scheduler.respond(new CoCaller() {
+                            scheduler.resumeOther(new CoCaller(scheduler, requester) {
                                 @Override
                                 public void resumeResponse(CoRoutine requester, Object signal) {
                                     provide(requester, index + 1, list);
                                 }
                             }, requester, list("next", next));
                         } else {
-                            scheduler.respond(requester, "end");
+                            scheduler.resumeOther(requester, "end");
                         }
                     }
                 };
             }
         });
 
+        Object aListCode = list(
+            list("resume", list("quote", list("next", 0))),
+            list("resume", list("quote", list("next", 1))),
+            list("resume", list("quote", list("next", 2)))
+        );
+
         // An example of using co with an expression for which new coroutine instances are created for each response
         CoRoutine coListCode = new Evaluator(env).eval(scheduler, list("co", list("aList")));
 
-        scheduler.respond(new CoCaller() {
+        scheduler.respond(new CoCaller(scheduler, null) {
             CoRoutine coList;
 
             @Override
             public void resumeResponse(CoRoutine requester, Object signal) {
-                scheduler.respond(new CoCaller() {
+                scheduler.respond(new CoCaller(scheduler, requester) {
                     @Override
                     public void resumeResponse(CoRoutine requester, Object signal) {
                         coList = (CoRoutine)signal;
 
-                        scheduler.respond(new CoCaller() {
+                        /*scheduler.respond(new CoCaller(scheduler, requester) {
                             @Override
                             public void resumeResponse(CoRoutine requester, Object signal) {
-                                handleNext(signal);
+                                handleNext(requester, signal);
+                            }
+                        }, coList, null);*/
+
+                        scheduler.respond(new CoRoutineImpl() {
+                            @Override
+                            public void resume(CoRoutine requester, Object signal) {
+                                signal.toString();
+                                handleNext(requester, signal);
+                            }
+
+                            @Override
+                            public void resumeOther(CoRoutine requester, Object signal) {
+                                signal.toString();
                             }
                         }, coList, null);
                     }
                 }, coListCode, null);
             }
 
-            private void handleNext(Object signal) {
+            private void handleNext(CoRoutine requester, Object signal) {
                 if(signal instanceof Pair && ((Pair)signal).current.equals("next")) {
                     System.out.println("Next in list: " + ((Pair)signal).next.current);
 
-                    scheduler.respond(new CoCaller() {
+                    scheduler.respond(new CoRoutineImpl() {
                         @Override
-                        public void resumeResponse(CoRoutine requester, Object signal) {
-                            handleNext(signal);
+                        public void resume(CoRoutine requester, Object signal) {
+                            handleNext(requester, signal);
                         }
                     }, coList, null);
                 } else if(signal.equals("end")) {
@@ -438,7 +467,7 @@ public class Main {
         CoRoutine coParse = new Evaluator(env).eval(scheduler, list("parse", srcInputStream));
 
         scheduler.respond(
-            new CoCaller() {
+            new CoCaller(scheduler, null) {
                 CoRoutineImpl parseHandler = this;
                 CoRoutine parseRequester;
 
@@ -454,7 +483,7 @@ public class Main {
                             Object program = next;
                             CoRoutine coProgram = evaluator2.eval(scheduler, program);
 
-                            scheduler.resume(new CoCaller() {
+                            scheduler.resume(new CoCaller(scheduler, requester) {
                                 @Override
                                 public void resumeResponse(CoRoutine requester, Object signal) {
                                     System.out.println("=> " + signal);
@@ -469,6 +498,11 @@ public class Main {
                                 public void resumeError(CoRoutine requester, Object signal) {
                                     System.err.println("Error: " + signal);
                                     System.out.flush();
+                                }
+
+                                @Override
+                                public void resumeOther(CoRoutine requester, Object signal) {
+                                    super.resumeOther(requester, signal);
                                 }
                             }, coProgram, null);
                         } else if (signalAsPair.current.equals("atEnd")) {
@@ -509,7 +543,7 @@ public class Main {
         );
 
         CoRoutine coProgram = evaluator2.eval(scheduler, program);
-        scheduler.resume(new CoCaller() {
+        scheduler.resume(new CoCaller(scheduler, null) {
             @Override
             public void resumeResponse(CoRoutine requester, Object signal) {
                 System.out.println("Response: " + signal);

@@ -36,9 +36,9 @@ public class Evaluator {
             scheduler.respond(requester, item);
     }
 
-    public void eval(Scheduler scheduler, Object item, Consumer<Object> responseHandler) {
+    public void eval(Scheduler scheduler, Object item, CoRoutine requester, Consumer<Object> responseHandler) {
         CoRoutine evaluation = eval(scheduler, item);
-        scheduler.resume(new CoCaller() {
+        scheduler.resume(new CoCaller(scheduler, requester) {
             @Override
             public void resumeResponse(CoRoutine requester, Object signal) {
                 responseHandler.accept(signal);
@@ -46,12 +46,20 @@ public class Evaluator {
         }, evaluation, null);
     }
 
-    public void evaluateList(Scheduler scheduler, Pair list, Object lastResult, CoRoutine requester) {
+    public void evaluateList(Scheduler scheduler, Pair list, Object lastResult, CoRoutine evalRequester) {
         if(list == null)
-            scheduler.respond(requester, lastResult);
+            scheduler.respond(evalRequester, lastResult);
         else {
-            eval(scheduler, list.current, result ->
-                evaluateList(scheduler, list.next, result, requester));
+            //eval(scheduler, list.current, result ->
+            //    evaluateList(scheduler, list.next, result, evalRequester));
+
+            CoRoutine evaluation = eval(scheduler, list.current);
+            scheduler.resume(new CoCaller(scheduler, evalRequester) {
+                @Override
+                public void resumeResponse(CoRoutine requester, Object result) {
+                    evaluateList(scheduler, list.next, result, requester);
+                }
+            }, evaluation, null);
         }
     }
 }

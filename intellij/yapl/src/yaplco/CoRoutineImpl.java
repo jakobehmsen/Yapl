@@ -21,6 +21,10 @@ public interface CoRoutineImpl extends CoRoutine {
         resume(requester, Pair.list("error", signal));
     }
 
+    default void resumeOther(CoRoutine requester, Object signal) {
+        resume(requester, signal);
+    }
+
     void resume(CoRoutine requester, Object signal);
 
     /*CoRoutine END = new CoRoutine() {
