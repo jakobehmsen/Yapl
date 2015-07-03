@@ -23,8 +23,35 @@ public class Evaluator {
                         ? ((Primitive)function).newCo(scheduler, this)
                         : eval(scheduler, function);
 
-                    return (CoRoutineImpl) (requester, signal) ->
-                        scheduler.resume(requester, co, args);
+                    /*
+                    Assumed the following protocol for functions:
+
+                    a function is called with no initial signal and is assumed to request its arguments actively
+                    - the signal is not accessible to custom functions:
+
+                    // Server side (primitive or custom):
+                    args = resume() // Request arguments
+                    // do something based on args
+                    resume(list('respond, ...)) // Pass response
+
+                    // Client side (for instance evaluator):
+                    function = ...
+                    resume(function); // Resume function till it requests its arguments
+                    response = resume(args) // Supply arguments and get response
+
+                    */
+
+                    /*return (CoRoutineImpl) (requester, signal) ->
+                        scheduler.resume(requester, co, args);*/
+
+                    return (CoRoutineImpl) (requester, signal) -> {
+                        // Trigger argument request
+                        scheduler.resume((CoRoutineImpl) (coRequestingArgs, s) -> {
+                            // Function now requests arguments
+                            // Pass arguments
+                            scheduler.resume(requester, coRequestingArgs, args);
+                        }, co, null);
+                    };
                 } else {
                     return (CoRoutineImpl) (requester, signal) ->
                         evaluateList(scheduler, list, null, requester);
@@ -57,7 +84,7 @@ public class Evaluator {
             scheduler.resume(new CoCaller(scheduler, evalRequester) {
                 @Override
                 public void resumeResponse(CoRoutine requester, Object result) {
-                    evaluateList(scheduler, list.next, result, requester);
+                    evaluateList(scheduler, list.next, result, evalRequester);
                 }
             }, evaluation, null);
         }

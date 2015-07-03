@@ -12,6 +12,44 @@ public class Main {
     public static void main(String[] args) {
         Environment env = new Environment();
 
+        env.defun("+", int.class, int.class, (s, evaluator, requester, lhs, rhs) ->
+            s.respond(requester, lhs + rhs));
+        //requester.respond(lhs + rhs));
+        /*env.defun("+", int.class, int.class, (e, r, lhs, rhs) -> r);
+        env.defun("-", int.class, int.class, (co, lhs, rhs) -> e.popFrame(lhs - rhs));
+        env.defun("/", int.class, int.class, (co, lhs, rhs) -> e.popFrame(lhs / rhs));
+        env.defun("*", int.class, int.class, (co, lhs, rhs) -> e.popFrame(lhs * rhs));*/
+
+        Scheduler scheduler = new Scheduler();
+
+        Evaluator ev = new Evaluator(env);
+
+        CoRoutine evaluation = ev.eval(scheduler, list("+", list("+", 1, 2), 2));
+        scheduler.resume(new CoRoutineImpl() {
+            @Override
+            public void resume(CoRoutine requester, Object signal) {
+                new String();
+            }
+
+            @Override
+            public void resumeResponse(CoRoutine requester, Object signal) {
+                System.out.println("Response: " + signal);
+            }
+
+            @Override
+            public void resumeError(CoRoutine requester, Object signal) {
+                System.err.println("Error: " + signal);
+            }
+
+            @Override
+            public void resumeOther(CoRoutine requester, Object signal) {
+                System.out.println("Other: " + signal);
+            }
+        }, evaluation, null);
+
+        if(1 != 2)
+            return;
+
         // Define primitives
 
         /*
@@ -132,8 +170,6 @@ public class Main {
                 e2.evaluate(body);
             }));
         */
-
-        Scheduler scheduler = new Scheduler();
 
         env.define("parse", new Primitive() {
             @Override
@@ -290,16 +326,20 @@ public class Main {
             }
         });
 
-        env.defun("resume", int.class, int.class, (s, evaluator, requester, lhs, rhs) ->
-            s.respond(requester, lhs + rhs));
+        env.define("resume", new Primitive() {
+            @Override
+            public CoRoutine newCo(Scheduler scheduler, Evaluator evaluator) {
+                return new CoRoutineImpl() {
+                    @Override
+                    public void resume(CoRoutine requester, Object signal) {
 
-        env.defun("+", int.class, int.class, (s, evaluator, requester, lhs, rhs) ->
-            s.respond(requester, lhs + rhs));
-            //requester.respond(lhs + rhs));
-        /*env.defun("+", int.class, int.class, (e, r, lhs, rhs) -> r);
-        env.defun("-", int.class, int.class, (co, lhs, rhs) -> e.popFrame(lhs - rhs));
-        env.defun("/", int.class, int.class, (co, lhs, rhs) -> e.popFrame(lhs / rhs));
-        env.defun("*", int.class, int.class, (co, lhs, rhs) -> e.popFrame(lhs * rhs));*/
+                    }
+                };
+            }
+        });
+
+        env.defun("resume", Object.class, (s, evaluator, requester, signal) ->
+            s.resume(requester, requester, signal));
 
         // co wraps an expression such that variable co-routines are supported during request/response logic
         // Can this primitive be implemented in a custom way

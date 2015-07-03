@@ -38,8 +38,10 @@ public class Environment {
                 return new CoRoutineImpl() {
                     @Override
                     public void resume(CoRoutine requester, Object signal) {
-                        Pair signalAsPair = (Pair)signal;
-                        function.accept(scheduler, evaluator, requester, signalAsPair);
+                        scheduler.resume((CoRoutineImpl) (r, args) -> {
+                            Pair signalAsPair = (Pair) args;
+                            function.accept(scheduler, evaluator, r, signalAsPair);
+                        }, requester, null);
                     }
                 };
             }
