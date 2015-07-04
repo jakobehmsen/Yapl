@@ -8,12 +8,22 @@ public class YaplThread implements YaplObject {
     }
 
     @Override
-    public void send(YaplObject message) {
+    public void send(YaplObject thread, YaplObject message) {
 
     }
 
     @Override
     public YaplObject getFrame() {
         return frame;
+    }
+
+    @Override
+    public void pushFrame(YaplObject receiver, YaplObject environment) {
+        frame = new YaplFrame(frame, receiver, environment);
+    }
+
+    @Override
+    public void popFrame() {
+        frame = frame.getOuter();
     }
 }

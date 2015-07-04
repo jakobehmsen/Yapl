@@ -1,7 +1,7 @@
 package yaploo;
 
 public interface YaplObject {
-    void send(YaplObject message);
+    void send(YaplObject thread, YaplObject message);
 
     default YaplObject getSelector() {
         throw new UnsupportedOperationException();
@@ -32,6 +32,38 @@ public interface YaplObject {
     }
 
     default YaplObject getFrame() {
+        throw new UnsupportedOperationException();
+    }
+
+    default YaplObject extend() {
+        throw new UnsupportedOperationException();
+    }
+
+    default YaplObject resolve(String selector) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void pushFrame(YaplObject receiver, YaplObject environment) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void popFrame() {
+        throw new UnsupportedOperationException();
+    }
+
+    default void bindArguments(YaplObject args, YaplObject environment) {
+        throw new UnsupportedOperationException();
+    }
+
+    default YaplObject length() {
+        throw new UnsupportedOperationException();
+    }
+
+    default void define(String name, YaplObject obj)  {
+        throw new UnsupportedOperationException();
+    }
+
+    default YaplObject getOuter() {
         throw new UnsupportedOperationException();
     }
 }

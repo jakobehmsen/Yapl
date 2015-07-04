@@ -2,7 +2,7 @@ package yaploo;
 
 public abstract class YaplPrimitive implements YaplObject {
     @Override
-    public void send(YaplObject message) {
+    public void send(YaplObject thread, YaplObject message) {
 
     }
 
@@ -19,6 +19,16 @@ public abstract class YaplPrimitive implements YaplObject {
                 YaplObject result = array.get(index.toInt());
 
                 thread.getFrame().push(result);
+            }
+        };
+
+        public static final YaplPrimitive send = new YaplPrimitive() {
+            @Override
+            public void eval(YaplObject thread) {
+                YaplObject message = thread.getFrame().pop();
+                YaplObject receiver = thread.getFrame().pop();
+
+                receiver.send(thread, message);
             }
         };
 

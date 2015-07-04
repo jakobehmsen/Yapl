@@ -8,7 +8,7 @@ public class YaplInteger implements YaplObject {
     }
 
     @Override
-    public void send(YaplObject message) {
+    public void send(YaplObject thread, YaplObject message) {
 
     }
 
