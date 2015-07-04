@@ -9,18 +9,18 @@ public class Main {
         */
 
         YaplArray addNumbersBody = new YaplArray(new YaplObject[]{
-            YaplPrimitive.Factory.push(new YaplInteger(3)),
-            YaplPrimitive.Factory.push(new YaplInteger(5)),
+            YaplPrimitive.Factory.load("x"),
+            YaplPrimitive.Factory.load("y"),
             YaplPrimitive.Factory.integerAdd
         });
 
         YaplEnvironment env = new YaplEnvironment();
-        env.define("addNumbers", new YaplBehavior(new YaplArray(), addNumbersBody));
+        env.define("addNumbers", new YaplBehavior(new YaplArray(new YaplObject[]{new YaplString("x"), new YaplString("y")}), addNumbersBody));
         YaplProgrammableObject obj = new YaplProgrammableObject(env);
 
         YaplArray program = new YaplArray(new YaplObject[]{
             YaplPrimitive.Factory.push(obj),
-            YaplPrimitive.Factory.push(new YaplSelectorArgsMessage(new YaplString("addNumbers"), new YaplArray())),
+            YaplPrimitive.Factory.push(new YaplSelectorArgsMessage(new YaplString("addNumbers"), new YaplArray(new YaplObject[]{new YaplInteger(7), new YaplInteger(3)}))),
             YaplPrimitive.Factory.send
         });
 

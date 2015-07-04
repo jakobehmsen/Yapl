@@ -52,5 +52,15 @@ public abstract class YaplPrimitive implements YaplObject {
                 }
             };
         }
+
+        public static YaplPrimitive load(String name) {
+            return new YaplPrimitive() {
+                @Override
+                public void eval(YaplObject thread) {
+                    YaplObject obj = thread.getFrame().getEnvironment().resolve(name);
+                    thread.getFrame().push(obj);
+                }
+            };
+        }
     }
 }

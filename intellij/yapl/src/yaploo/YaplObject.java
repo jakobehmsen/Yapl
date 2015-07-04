@@ -66,4 +66,8 @@ public interface YaplObject {
     default YaplObject getOuter() {
         throw new UnsupportedOperationException();
     }
+
+    default YaplObject getEnvironment() {
+        throw new UnsupportedOperationException();
+    }
 }

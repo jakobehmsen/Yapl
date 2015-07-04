@@ -33,4 +33,9 @@ public class YaplFrame implements YaplObject {
     public YaplObject getOuter() {
         return outer;
     }
+
+    @Override
+    public YaplObject getEnvironment() {
+        return environment;
+    }
 }
