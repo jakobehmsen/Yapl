@@ -5,6 +5,7 @@ import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static yaplco.Pair.list;
 
@@ -12,8 +13,82 @@ public class Main {
     public static void main(String[] args) {
         Environment env = new Environment();
 
+        env.defun("get", String.class, (s, evaluator, requester, name) ->
+            s.respond(requester, evaluator.environment.get(name)));
+
+        env.define("quote", (scheduler1, evaluator) -> (CoRoutineImpl) (requester, signal) ->
+            scheduler1.respond(requester, signal));
+
+        env.defun("request", (s, evaluator, requester, args1) ->
+            s.resume(requester, requester, null));
+
+        env.defun("resume", Object.class, (s, evaluator, requester, signal) ->
+            s.resume(requester, requester, signal));
+
         env.defun("+", int.class, int.class, (s, evaluator, requester, lhs, rhs) ->
             s.respond(requester, lhs + rhs));
+
+        env.defun("let-list-eval", new PrimitiveCoroutine() {
+            @Override
+            public void accept(Scheduler scheduler, Evaluator evaluator, CoRoutine requester, Pair args) {
+                Pair listToEvaluate = (Pair) args.current;
+                Pair names = (Pair)args.next.current;
+                Object body = args.next.next.current;
+
+                // CoRoutineImpl
+                evaluator.eval(scheduler, listToEvaluate /*How to handle requests properly?*/, requester, list -> {
+                    evaluator.environment = new Environment(evaluator.environment);
+
+                    evaluateAndBindNext(scheduler, evaluator, requester, (Pair)list, names, body);
+                });
+
+                /*evaluator.eval(scheduler, listToEvaluate, new CoRoutineImpl() {
+                    @Override
+                    public void resume(CoRoutine requester, Object signal) {
+                        evaluator.environment = new Environment(evaluator.environment);
+
+                        evaluateAndBindNext(scheduler, evaluator, requester, (Pair)signal, names, body);
+                    }
+                });*/
+            }
+
+            private void evaluateAndBindNext(Scheduler scheduler, Evaluator evaluator, CoRoutine requester, Pair list, Pair names, Object body) {
+                if(list != null && names != null) {
+                    Object itemToEvaluate = list.current;
+                    String name = (String)names.current;
+
+                    evaluator.eval(scheduler, itemToEvaluate, requester, item -> {
+                        evaluator.environment.define(name, item);
+
+                        evaluateAndBindNext(scheduler, evaluator, requester, list.next, names.next, body);
+                    });
+                } else {
+                    CoRoutine bodyForEvaluation = evaluator.eval(scheduler, body);
+                    evaluator.eval(scheduler, requester, bodyForEvaluation, result -> {
+                        scheduler.respond(requester, result);
+                    });
+                }
+            }
+        });
+
+        env.define("myFunc", list("let-list-eval", list("request"), list("a", "b"), list(
+            list("+", list("get", "a"), list("get", "b"))
+        )));
+
+        /*
+        How should arguments provided?
+        As a list?
+
+        Are provided one at a time?
+        And thus requested one at a time?
+
+        // let-list-eval maps each item of a list to its evaluated part and declares and binds locals to the evaluated items
+        (define myFunc '(let-list-eval (resume) (x y z) (
+
+        )))
+
+        */
+
         //requester.respond(lhs + rhs));
         /*env.defun("+", int.class, int.class, (e, r, lhs, rhs) -> r);
         env.defun("-", int.class, int.class, (co, lhs, rhs) -> e.popFrame(lhs - rhs));
@@ -24,7 +99,8 @@ public class Main {
 
         Evaluator ev = new Evaluator(env);
 
-        CoRoutine evaluation = ev.eval(scheduler, list("+", list("+", 1, 2), 2));
+        //CoRoutine evaluation = ev.eval(scheduler, list("+", list("+", 1, 2), 2));
+        CoRoutine evaluation = ev.eval(scheduler, list("myFunc", 1, 2));
         scheduler.resume(new CoRoutineImpl() {
             @Override
             public void resume(CoRoutine requester, Object signal) {
@@ -182,7 +258,7 @@ public class Main {
 
                     @Override
                     public void resume(CoRoutine requester, Object signal) {
-                        if(!inited) {
+                        if (!inited) {
                             evaluator.eval(scheduler, ((Pair) signal).current, requester, arg0 -> {
                                 InputStream inputStream = (InputStream) arg0;
                                 reader = new BufferedReader(new InputStreamReader(inputStream));
@@ -194,7 +270,7 @@ public class Main {
                             });
                         } else {
                             ignore();
-                            if(!atEnd()) {
+                            if (!atEnd()) {
                                 Object next = next();
                                 scheduler.resumeResponse(this, requester, Pair.list("next", next));
                             } else
@@ -203,36 +279,36 @@ public class Main {
                     }
 
                     Object next() {
-                        if(peek() == '(') {
+                        if (peek() == '(') {
                             consume();
                             ignore();
 
                             Object next = nextList();
-                            if(peek() == ')') {
+                            if (peek() == ')') {
                                 consume();
 
                                 return next;
                             } else {
                                 // ERROR
                             }
-                        } else if(Character.isDigit(peek())) {
+                        } else if (Character.isDigit(peek())) {
                             StringBuffer digits = new StringBuffer();
                             digits.append(peek());
                             consume();
 
-                            while(Character.isDigit(peek())) {
+                            while (Character.isDigit(peek())) {
                                 digits.append(peek());
                                 consume();
                             }
 
                             return Integer.parseInt(digits.toString());
-                        } else if(peek() == '"') {
+                        } else if (peek() == '"') {
                             consume();
 
                             StringBuffer chars = new StringBuffer();
 
-                            while(true) {
-                                if(peek() == '"') {
+                            while (true) {
+                                if (peek() == '"') {
                                     consume();
                                     break;
                                 }
@@ -243,12 +319,12 @@ public class Main {
                             }
 
                             return chars.toString();
-                        } else if(isIdentifierPart(peek())) {
+                        } else if (isIdentifierPart(peek())) {
                             StringBuffer parts = new StringBuffer();
                             parts.append(peek());
                             consume();
 
-                            while(isIdentifierPart(peek())) {
+                            while (isIdentifierPart(peek())) {
                                 parts.append(peek());
                                 consume();
                             }
@@ -267,9 +343,9 @@ public class Main {
                     Pair nextList() {
                         ArrayList<Object> items = new ArrayList<>();
 
-                        while(!atEnd()) {
+                        while (!atEnd()) {
                             Object next = next();
-                            if(next != null) {
+                            if (next != null) {
                                 items.add(next);
                                 ignore();
                             } else
@@ -294,7 +370,7 @@ public class Main {
                             try {
                                 CharBuffer readChars = CharBuffer.allocate(1024);
                                 int readCharCount = reader.read(readChars);
-                                if(readCharCount > 0) {
+                                if (readCharCount > 0) {
                                     readChars.position(0);
                                     buffer.append(readChars, 0, readCharCount);
                                 }
@@ -317,29 +393,6 @@ public class Main {
                 };
             }
         });
-
-        env.define("quote", new Primitive() {
-            @Override
-            public CoRoutine newCo(Scheduler scheduler, Evaluator evaluator) {
-                return (CoRoutineImpl) (requester, signal) ->
-                    scheduler.respond(requester, signal);
-            }
-        });
-
-        env.define("resume", new Primitive() {
-            @Override
-            public CoRoutine newCo(Scheduler scheduler, Evaluator evaluator) {
-                return new CoRoutineImpl() {
-                    @Override
-                    public void resume(CoRoutine requester, Object signal) {
-
-                    }
-                };
-            }
-        });
-
-        env.defun("resume", Object.class, (s, evaluator, requester, signal) ->
-            s.resume(requester, requester, signal));
 
         // co wraps an expression such that variable co-routines are supported during request/response logic
         // Can this primitive be implemented in a custom way

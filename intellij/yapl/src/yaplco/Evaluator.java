@@ -3,7 +3,7 @@ package yaplco;
 import java.util.function.Consumer;
 
 public class Evaluator {
-    private Environment environment;
+    public Environment environment;
 
     public Evaluator(Environment environment) {
         this.environment = environment;
@@ -22,6 +22,12 @@ public class Evaluator {
                     CoRoutine co = function instanceof Primitive
                         ? ((Primitive)function).newCo(scheduler, this)
                         : eval(scheduler, function);
+
+                    /*
+                    TODO:
+                    Consider whether it is possible to pre-process request and resume such that thay work as expected?
+                    Or is more evaluation context needed?
+                    */
 
                     /*
                     Assumed the following protocol for functions:
@@ -64,13 +70,35 @@ public class Evaluator {
     }
 
     public void eval(Scheduler scheduler, Object item, CoRoutine requester, Consumer<Object> responseHandler) {
-        CoRoutine evaluation = eval(scheduler, item);
+        /*CoRoutine evaluation = eval(scheduler, item);
         scheduler.resume(new CoCaller(scheduler, requester) {
             @Override
             public void resumeResponse(CoRoutine requester, Object signal) {
                 responseHandler.accept(signal);
             }
-        }, evaluation, null);
+
+            @Override
+            public String toString() {
+                return "eval caller";
+            }
+        }, evaluation, null);*/
+
+        eval(scheduler, item, new CoCaller(scheduler, requester) {
+            @Override
+            public void resumeResponse(CoRoutine requester, Object signal) {
+                responseHandler.accept(signal);
+            }
+
+            @Override
+            public String toString() {
+                return "eval caller";
+            }
+        });
+    }
+
+    public void eval(Scheduler scheduler, Object item, CoRoutine requester) {
+        CoRoutine evaluation = eval(scheduler, item);
+        scheduler.resume(requester, evaluation, null);
     }
 
     public void evaluateList(Scheduler scheduler, Pair list, Object lastResult, CoRoutine evalRequester) {
@@ -85,6 +113,11 @@ public class Evaluator {
                 @Override
                 public void resumeResponse(CoRoutine requester, Object result) {
                     evaluateList(scheduler, list.next, result, evalRequester);
+                }
+
+                @Override
+                public String toString() {
+                    return "eval list caller";
                 }
             }, evaluation, null);
         }
