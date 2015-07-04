@@ -15,12 +15,6 @@ public class YaplProgrammableObject implements YaplObject {
 
         behavior.bindArguments(message.getArgs(), environment);
 
-        thread.pushFrame(this, environment);
-
-        behavior.eval(thread);
-
-        YaplObject result = thread.getFrame().pop();
-        thread.popFrame();
-        thread.getFrame().push(result);
+        thread.pushFrame(this, environment, behavior.getInstructions());
     }
 }

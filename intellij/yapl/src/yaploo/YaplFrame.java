@@ -6,12 +6,24 @@ public class YaplFrame implements YaplObject {
     private YaplObject outer;
     private YaplObject receiver;
     private YaplObject environment;
+    private YaplObject instructions;
     private Stack<YaplObject> stack = new Stack<>();
+    private int ip;
 
-    public YaplFrame(YaplObject outer, YaplObject receiver, YaplObject environment) {
+    public YaplFrame(YaplObject outer, YaplObject receiver, YaplObject environment, YaplObject instructions) {
         this.outer = outer;
         this.receiver = receiver;
         this.environment = environment;
+        this.instructions = instructions;
+    }
+
+    public void eval(YaplObject thread) {
+        instructions.get(ip).eval(thread);
+    }
+
+    @Override
+    public void incrementIP() {
+        ip++;
     }
 
     @Override

@@ -11,7 +11,8 @@ public class Main {
         YaplArray addNumbersBody = new YaplArray(new YaplObject[]{
             YaplPrimitive.Factory.load("x"),
             YaplPrimitive.Factory.load("y"),
-            YaplPrimitive.Factory.integerAdd
+            YaplPrimitive.Factory.integerAdd,
+            YaplPrimitive.Factory.respond
         });
 
         YaplEnvironment env = new YaplEnvironment();
@@ -21,11 +22,13 @@ public class Main {
         YaplArray program = new YaplArray(new YaplObject[]{
             YaplPrimitive.Factory.push(obj),
             YaplPrimitive.Factory.push(new YaplSelectorArgsMessage(new YaplString("addNumbers"), new YaplArray(new YaplObject[]{new YaplInteger(7), new YaplInteger(3)}))),
-            YaplPrimitive.Factory.send
+            YaplPrimitive.Factory.send,
+            YaplPrimitive.Factory.finish
         });
 
-        YaplThread thread = new YaplThread(new YaplFrame(null, null, null));
-        program.eval(thread);
+        YaplThread thread = new YaplThread(new YaplFrame(null, null, null, program));
+        thread.run();
+
         YaplObject result = thread.getFrame().pop();
 
         System.out.println(result);

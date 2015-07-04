@@ -43,7 +43,7 @@ public interface YaplObject {
         throw new UnsupportedOperationException();
     }
 
-    default void pushFrame(YaplObject receiver, YaplObject environment) {
+    default void pushFrame(YaplObject receiver, YaplObject environment, YaplObject instructions) {
         throw new UnsupportedOperationException();
     }
 
@@ -68,6 +68,22 @@ public interface YaplObject {
     }
 
     default YaplObject getEnvironment() {
+        throw new UnsupportedOperationException();
+    }
+
+    default void incrementIP() {
+        throw new UnsupportedOperationException();
+    }
+
+    default void run() {
+        throw new UnsupportedOperationException();
+    }
+
+    default void setFinished() {
+        throw new UnsupportedOperationException();
+    }
+
+    default YaplObject getInstructions() {
         throw new UnsupportedOperationException();
     }
 }

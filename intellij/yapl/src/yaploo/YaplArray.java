@@ -22,12 +22,6 @@ public class YaplArray implements YaplObject {
     }
 
     @Override
-    public void eval(YaplObject thread) {
-        for(int i = 0; i < items.length; i++)
-            items[i].eval(thread);
-    }
-
-    @Override
     public YaplObject length() {
         return new YaplInteger(items.length);
     }

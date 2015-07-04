@@ -29,4 +29,9 @@ public class YaplBehavior implements YaplObject {
     public void eval(YaplObject thread) {
         body.eval(thread);
     }
+
+    @Override
+    public YaplObject getInstructions() {
+        return body;
+    }
 }
