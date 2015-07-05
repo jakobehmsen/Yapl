@@ -7,7 +7,12 @@ public abstract class YaplPrimitive implements YaplObject {
     }
 
     @Override
-    public abstract void eval(YaplObject thread);
+    public void eval(YaplObject thread) {
+        evalOnWith(thread, thread.getFrame().getSelf(), thread.getFrame().getEnvironment(), thread.getArgs());
+    }
+
+    @Override
+    public abstract void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args);
 
     public static class Factory {
         public static final YaplPrimitive arrayGet = new YaplPrimitive() {
@@ -21,11 +26,22 @@ public abstract class YaplPrimitive implements YaplObject {
                 thread.getFrame().push(result);
                 thread.getFrame().incrementIP();
             }
+
+            @Override
+            public void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
+                YaplObject index = thread.getFrame().pop();
+                YaplObject array = thread.getFrame().pop();
+
+                YaplObject result = array.get(index.toInt());
+
+                thread.getFrame().push(result);
+                thread.getFrame().incrementIP();
+            }
         };
 
         public static final YaplPrimitive send = new YaplPrimitive() {
             @Override
-            public void eval(YaplObject thread) {
+            public void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
                 YaplObject message = thread.getFrame().pop();
                 YaplObject receiver = thread.getFrame().pop();
 
@@ -35,7 +51,7 @@ public abstract class YaplPrimitive implements YaplObject {
 
         public static final YaplPrimitive integerAdd = new YaplPrimitive() {
             @Override
-            public void eval(YaplObject thread) {
+            public void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
                 YaplObject rhs = thread.getFrame().pop();
                 YaplObject lhs = thread.getFrame().pop();
 
@@ -48,7 +64,7 @@ public abstract class YaplPrimitive implements YaplObject {
 
         public static final YaplPrimitive respond = new YaplPrimitive() {
             @Override
-            public void eval(YaplObject thread) {
+            public void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
                 YaplObject result = thread.getFrame().pop();
                 thread.popFrame();
                 thread.getFrame().push(result);
@@ -58,7 +74,7 @@ public abstract class YaplPrimitive implements YaplObject {
 
         public static final YaplPrimitive finish = new YaplPrimitive() {
             @Override
-            public void eval(YaplObject thread) {
+            public void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
                 thread.setFinished();
             }
         };
@@ -66,7 +82,7 @@ public abstract class YaplPrimitive implements YaplObject {
         public static YaplPrimitive push(YaplObject obj) {
             return new YaplPrimitive() {
                 @Override
-                public void eval(YaplObject thread) {
+                public void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
                     thread.getFrame().push(obj);
                     thread.getFrame().incrementIP();
                 }
@@ -76,7 +92,7 @@ public abstract class YaplPrimitive implements YaplObject {
         public static YaplPrimitive load(String name) {
             return new YaplPrimitive() {
                 @Override
-                public void eval(YaplObject thread) {
+                public void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
                     YaplObject obj = thread.getFrame().getEnvironment().resolve(name);
                     thread.getFrame().push(obj);
                     thread.getFrame().incrementIP();

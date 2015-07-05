@@ -3,87 +3,119 @@ package yaploo;
 public interface YaplObject {
     void send(YaplObject thread, YaplObject message);
 
+    default YaplObject send(String selector, YaplObject... args) {
+        YaplObject thread = new YaplThread(new YaplFrame(null, this, null, new YaplArray(new YaplObject[] {
+            YaplPrimitive.Factory.push(this),
+            YaplPrimitive.Factory.push(new YaplSelectorArgsMessage(new YaplString(selector), new YaplArray(args))),
+            YaplPrimitive.Factory.send,
+            YaplPrimitive.Factory.respond
+        }), new YaplArray(args)));
+        thread.run();
+        return thread.getFrame().pop();
+    }
+
     default YaplObject getSelector() {
-        throw new UnsupportedOperationException();
+        return send("getSelector");
+        //throw new UnsupportedOperationException();
     }
 
     default YaplObject getArgs() {
-        throw new UnsupportedOperationException();
+        return send("getArgs");
+        //throw new UnsupportedOperationException();
+    }
+
+    default YaplObject getSelf() {
+        return send("getSelf");
+        //throw new UnsupportedOperationException();
     }
 
     default YaplObject get(int index) {
-        throw new UnsupportedOperationException();
+        return send("get", new YaplInteger(index));
     }
 
     default void eval(YaplObject thread) {
-        throw new UnsupportedOperationException();
+        send("eval", thread);
+        //throw new UnsupportedOperationException();
+    }
+
+    default void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
+        send("evalOnWith", thread, self, environment, args);
+        //throw new UnsupportedOperationException();
     }
 
     default int toInt() {
-        throw new UnsupportedOperationException();
+        YaplObject intCompatible = send("toInt");
+        return intCompatible.toInt();
+        //throw new UnsupportedOperationException();
     }
 
     default YaplObject pop() {
-        throw new UnsupportedOperationException();
+        return send("pop");
+        //throw new UnsupportedOperationException();
     }
 
     default void push(YaplObject obj) {
-        throw new UnsupportedOperationException();
+        send("push", obj);
+        //throw new UnsupportedOperationException();
     }
 
     default YaplObject getFrame() {
-        throw new UnsupportedOperationException();
+        return send("getFrame");
+        //throw new UnsupportedOperationException();
     }
 
     default YaplObject extend() {
-        throw new UnsupportedOperationException();
+        return send("extend");
+        //throw new UnsupportedOperationException();
     }
 
     default YaplObject resolve(String selector) {
-        throw new UnsupportedOperationException();
+        return send("resolve", new YaplString(selector));
+        //throw new UnsupportedOperationException();
     }
 
-    default void pushFrame(YaplObject receiver, YaplObject environment, YaplObject instructions) {
-        throw new UnsupportedOperationException();
+    default void pushFrame(YaplObject receiver, YaplObject environment, YaplObject instructions, YaplObject args) {
+        send("pushFrame", receiver, environment, instructions, args);
+        //throw new UnsupportedOperationException();
     }
 
     default void popFrame() {
-        throw new UnsupportedOperationException();
-    }
-
-    default void bindArguments(YaplObject args, YaplObject environment) {
-        throw new UnsupportedOperationException();
+        send("popFrame");
+        //throw new UnsupportedOperationException();
     }
 
     default YaplObject length() {
-        throw new UnsupportedOperationException();
+        return send("length");
+        //throw new UnsupportedOperationException();
     }
 
     default void define(String name, YaplObject obj)  {
-        throw new UnsupportedOperationException();
+        send("define", new YaplString(name), obj);
+        //throw new UnsupportedOperationException();
     }
 
     default YaplObject getOuter() {
-        throw new UnsupportedOperationException();
+        return send("getOuter");
+        //throw new UnsupportedOperationException();
     }
 
     default YaplObject getEnvironment() {
-        throw new UnsupportedOperationException();
+        return send("getEnvironment");
+        //throw new UnsupportedOperationException();
     }
 
     default void incrementIP() {
-        throw new UnsupportedOperationException();
+        send("incrementIP");
+        //throw new UnsupportedOperationException();
     }
 
     default void run() {
-        throw new UnsupportedOperationException();
+        send("run");
+        //throw new UnsupportedOperationException();
     }
 
     default void setFinished() {
-        throw new UnsupportedOperationException();
-    }
-
-    default YaplObject getInstructions() {
-        throw new UnsupportedOperationException();
+        send("setFinished");
+        //throw new UnsupportedOperationException();
     }
 }

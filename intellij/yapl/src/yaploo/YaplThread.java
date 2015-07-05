@@ -19,8 +19,8 @@ public class YaplThread implements YaplObject {
     }
 
     @Override
-    public void pushFrame(YaplObject receiver, YaplObject environment, YaplObject instructions) {
-        frame = new YaplFrame(frame, receiver, environment, instructions);
+    public void pushFrame(YaplObject receiver, YaplObject environment, YaplObject instructions, YaplObject args) {
+        frame = new YaplFrame(frame, receiver, environment, instructions, args);
     }
 
     @Override

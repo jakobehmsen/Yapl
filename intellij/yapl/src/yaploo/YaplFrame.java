@@ -4,21 +4,23 @@ import java.util.Stack;
 
 public class YaplFrame implements YaplObject {
     private YaplObject outer;
-    private YaplObject receiver;
+    private YaplObject self;
     private YaplObject environment;
     private YaplObject instructions;
+    private YaplObject args;
     private Stack<YaplObject> stack = new Stack<>();
     private int ip;
 
-    public YaplFrame(YaplObject outer, YaplObject receiver, YaplObject environment, YaplObject instructions) {
+    public YaplFrame(YaplObject outer, YaplObject self, YaplObject environment, YaplObject instructions, YaplObject args) {
         this.outer = outer;
-        this.receiver = receiver;
+        this.self = self;
         this.environment = environment;
         this.instructions = instructions;
+        this.args = args;
     }
 
     public void eval(YaplObject thread) {
-        instructions.get(ip).eval(thread);
+        instructions.get(ip).evalOnWith(thread, self, environment, args);
     }
 
     @Override
@@ -49,5 +51,10 @@ public class YaplFrame implements YaplObject {
     @Override
     public YaplObject getEnvironment() {
         return environment;
+    }
+
+    @Override
+    public YaplObject getSelf() {
+        return self;
     }
 }
