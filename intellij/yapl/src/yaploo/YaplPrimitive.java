@@ -79,6 +79,20 @@ public abstract class YaplPrimitive implements YaplObject {
             }
         };
 
+        public static YaplPrimitive pop = new YaplPrimitive() {
+            @Override
+            public void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
+                thread.getFrame().pop();
+            }
+        };
+
+        public static YaplPrimitive pushSelf = new YaplPrimitive() {
+            @Override
+            public void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
+                thread.getFrame().push(self);
+            }
+        };
+
         public static YaplPrimitive push(YaplObject obj) {
             return new YaplPrimitive() {
                 @Override
@@ -96,6 +110,15 @@ public abstract class YaplPrimitive implements YaplObject {
                     YaplObject obj = thread.getFrame().getEnvironment().resolve(name);
                     thread.getFrame().push(obj);
                     thread.getFrame().incrementIP();
+                }
+            };
+        }
+
+        public static YaplObject define(String name) {
+            return new YaplPrimitive() {
+                @Override
+                public void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
+
                 }
             };
         }
