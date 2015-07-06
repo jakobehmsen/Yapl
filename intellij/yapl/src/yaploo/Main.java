@@ -51,8 +51,8 @@ public class Main {
 
         YaplObject program = new YaplArray(new YaplObject[]{
             YaplPrimitive.Factory.push(inputStreamObj),
-            YaplPrimitive.Factory.push(new YaplSelectorArgsMessage(new YaplString("next"), new YaplArray(new YaplObject[]{}))),
-            YaplPrimitive.Factory.send,
+            //YaplPrimitive.Factory.push(new YaplSelectorArgsMessage(new YaplString("next"), new YaplArray(new YaplObject[]{}))),
+            YaplPrimitive.Factory.send("next", 0),
             YaplPrimitive.Factory.finish
         });
 

@@ -27,7 +27,7 @@ public class Main {
             e.popFrame(value);
         });
 
-        env.defun("set", String.class, Object.class, (e, name, value) -> {
+        env.defun("store", String.class, Object.class, (e, name, value) -> {
             e.getEnvironment().set(name, value);
             e.popFrame(value);
         });

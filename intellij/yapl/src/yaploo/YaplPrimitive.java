@@ -39,15 +39,18 @@ public abstract class YaplPrimitive implements YaplObject {
             }
         };
 
-        public static final YaplPrimitive send = new YaplPrimitive() {
-            @Override
-            public void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
-                YaplObject message = thread.getFrame().pop();
-                YaplObject receiver = thread.getFrame().pop();
-
-                receiver.send(thread, message);
-            }
-        };
+        public static YaplPrimitive send(String selector, int argumentCount) {
+            return new YaplPrimitive() {
+                @Override
+                public void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
+                    YaplObject[] arguments = new YaplObject[argumentCount];
+                    for(int i = arguments.length - 1; i >= 0; i--)
+                        arguments[i] = thread.getFrame().pop();
+                    YaplObject receiver = thread.getFrame().pop();
+                    receiver.send(thread, new YaplSelectorArgsMessage(new YaplString(selector), new YaplArray(arguments)));
+                }
+            };
+        }
 
         public static final YaplPrimitive integerAdd = new YaplPrimitive() {
             @Override
@@ -86,6 +89,13 @@ public abstract class YaplPrimitive implements YaplObject {
             }
         };
 
+        public static YaplPrimitive dup = new YaplPrimitive() {
+            @Override
+            public void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
+                thread.getFrame().dup();
+            }
+        };
+
         public static YaplPrimitive pushSelf = new YaplPrimitive() {
             @Override
             public void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
@@ -107,7 +117,7 @@ public abstract class YaplPrimitive implements YaplObject {
             return new YaplPrimitive() {
                 @Override
                 public void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
-                    YaplObject obj = thread.getFrame().getEnvironment().resolve(name);
+                    YaplObject obj = environment.resolve(name);
                     thread.getFrame().push(obj);
                     thread.getFrame().incrementIP();
                 }
@@ -118,7 +128,20 @@ public abstract class YaplPrimitive implements YaplObject {
             return new YaplPrimitive() {
                 @Override
                 public void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
+                    YaplObject value = thread.getFrame().pop();
+                    environment.define(name, value);
+                    thread.getFrame().incrementIP();
+                }
+            };
+        }
 
+        public static YaplObject store(String name) {
+            return new YaplPrimitive() {
+                @Override
+                public void evalOnWith(YaplObject thread, YaplObject self, YaplObject environment, YaplObject args) {
+                    YaplObject value = thread.getFrame().pop();
+                    environment.set(name, value);
+                    thread.getFrame().incrementIP();
                 }
             };
         }

@@ -1,15 +1,24 @@
 package yaploo;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+
 public interface YaplObject {
     void send(YaplObject thread, YaplObject message);
 
     default YaplObject send(String selector, YaplObject... args) {
-        YaplObject thread = new YaplThread(new YaplFrame(null, this, null, new YaplArray(new YaplObject[] {
-            YaplPrimitive.Factory.push(this),
-            YaplPrimitive.Factory.push(new YaplSelectorArgsMessage(new YaplString(selector), new YaplArray(args))),
-            YaplPrimitive.Factory.send,
-            YaplPrimitive.Factory.respond
-        }), new YaplArray(args)));
+        ArrayList<YaplObject> instructions = new ArrayList<>();
+
+        instructions.add(YaplPrimitive.Factory.push(this));
+
+        Arrays.asList(args).stream().forEach(x -> instructions.add(YaplPrimitive.Factory.push(x)));
+
+        instructions.add(YaplPrimitive.Factory.send(selector, args.length));
+        instructions.add(YaplPrimitive.Factory.respond);
+
+        YaplObject thread = new YaplThread(
+            new YaplFrame(null, this, null, new YaplArray(instructions.toArray(new YaplObject[instructions.size()])), new YaplArray(args)));
         thread.run();
         return thread.getFrame().pop();
     }
@@ -116,6 +125,16 @@ public interface YaplObject {
 
     default void setFinished() {
         send("setFinished");
+        //throw new UnsupportedOperationException();
+    }
+
+    default void set(String name, YaplObject value) {
+        send("store", new YaplString(name), value);
+        //throw new UnsupportedOperationException();
+    }
+
+    default void dup() {
+        send("dup");
         //throw new UnsupportedOperationException();
     }
 }
