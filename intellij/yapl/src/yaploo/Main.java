@@ -3,6 +3,7 @@ package yaploo;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 
 public class Main {
     public static void main(String[] args) {
@@ -49,12 +50,21 @@ public class Main {
             }
         };
 
-        YaplObject program = new YaplArray(new YaplObject[]{
+        YaplObject program =
+            AST.Factory.send(AST.Factory.cnst(inputStreamObj), "next")
+            .accept(new ASTToInstructions(false, new ArrayList<>()))
+            .append(YaplPrimitive.Factory.finish)
+            .toYaplObject();
+
+        /*YaplObject program = ASTToInstructions.toProgram(
+            AST.Factory.send(AST.Factory.cnst(inputStreamObj), "next")
+        );*/
+
+        /*YaplObject program = new YaplArray(new YaplObject[]{
             YaplPrimitive.Factory.push(inputStreamObj),
-            //YaplPrimitive.Factory.push(new YaplSelectorArgsMessage(new YaplString("next"), new YaplArray(new YaplObject[]{}))),
             YaplPrimitive.Factory.send("next", 0),
             YaplPrimitive.Factory.finish
-        });
+        });*/
 
         /*YaplObject addNumbersBody = new YaplArray(new YaplObject[]{
             YaplPrimitive.Factory.load("x"),

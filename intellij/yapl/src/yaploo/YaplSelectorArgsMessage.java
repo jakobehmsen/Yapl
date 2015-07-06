@@ -23,6 +23,4 @@ public class YaplSelectorArgsMessage implements YaplObject {
     public YaplObject getArgs() {
         return arguments;
     }
-
-
 }

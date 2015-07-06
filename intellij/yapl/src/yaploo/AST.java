@@ -13,6 +13,7 @@ public interface AST {
         T visitDefine(String name, AST value);
         T visitSet(String name, AST value);
         T visitGet(String name);
+        T visitConst(YaplObject obj);
     }
 
     <T> T accept(Visitor<T> visitor);
@@ -54,7 +55,7 @@ public interface AST {
             };
         }
 
-        public static AST messageSend(AST receiver, String selector, AST... args) {
+        public static AST send(AST receiver, String selector, AST... args) {
             return new AST() {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
@@ -86,6 +87,15 @@ public interface AST {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitGet(name);
+                }
+            };
+        }
+
+        public static AST cnst(YaplObject obj) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitConst(obj);
                 }
             };
         }
