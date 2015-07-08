@@ -48,7 +48,7 @@ public class Main {
             }),
             store("myFunc"),
             load("myFunc"),
-            call(),
+            call,
             finish
         })).evalAll().operandFrame.pop();
 

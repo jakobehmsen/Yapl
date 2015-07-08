@@ -50,13 +50,11 @@ public interface Instruction {
             };
         }
 
-        public static Instruction call() {
-            return thread -> {
-                // Both an operand stack and an operation stack?
-                Instruction[] instructions = (Instruction[])thread.operandFrame.pop();
-                thread.callFrame = new CallFrame(thread.callFrame, instructions);
-            };
-        }
+        public static Instruction call = thread -> {
+            // Both an operand stack and an operation stack?
+            Instruction[] instructions = (Instruction[])thread.operandFrame.pop();
+            thread.callFrame = new CallFrame(thread.callFrame, instructions);
+        };
 
         public static Instruction ret = thread -> {
             thread.callFrame = thread.callFrame.outer;
