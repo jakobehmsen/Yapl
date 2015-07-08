@@ -1,7 +1,6 @@
 package yaplstack;
 
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 public interface Instruction {
     void eval(Thread thread);
@@ -9,26 +8,26 @@ public interface Instruction {
     interface IncIP extends Instruction {
         default void eval(Thread thread) {
             doEval(thread);
-            thread.frame.incrementIP();
+            thread.callFrame.incrementIP();
         }
         void doEval(Thread thread);
     }
 
     class Factory {
         public static IncIP push(Object obj) {
-            return thread -> thread.frame.push(obj);
+            return thread -> thread.operandFrame.push(obj);
         }
 
-        public static IncIP pop = thread -> thread.frame.pop();
+        public static IncIP pop = thread -> thread.operandFrame.pop();
 
         public static Instruction finish = thread -> thread.setFinished();
 
         private static <T, R, S> IncIP binaryReducer(BiFunction<R, T, S> reducer) {
             return thread -> {
-                R operand2 = (R)thread.frame.pop();
-                T operand1 = (T)thread.frame.pop();
+                R operand2 = (R)thread.operandFrame.pop();
+                T operand1 = (T)thread.operandFrame.pop();
                 S res = reducer.apply(operand2, operand1);
-                thread.frame.push(res);
+                thread.operandFrame.push(res);
             };
         }
 
@@ -39,31 +38,29 @@ public interface Instruction {
 
         public static IncIP store(String name) {
             return thread -> {
-                Object value = thread.frame.pop();
-                thread.frame.environment.store(name, value);
+                Object value = thread.operandFrame.pop();
+                thread.environment.store(name, value);
             };
         }
 
         public static IncIP load(String name) {
             return thread -> {
-                Object value = thread.frame.environment.load(name);
-                thread.frame.push(value);
+                Object value = thread.environment.load(name);
+                thread.operandFrame.push(value);
             };
         }
 
-        public static IncIP call() {
+        public static Instruction call() {
             return thread -> {
-                Instruction[] instructions = (Instruction[])thread.frame.pop();
-                thread.frame = new Frame(thread.frame, thread.frame.environment, instructions);
+                // Both an operand stack and an operation stack?
+                Instruction[] instructions = (Instruction[])thread.operandFrame.pop();
+                thread.callFrame = new CallFrame(thread.callFrame, instructions);
             };
         }
 
-        public static IncIP ret() {
-            return thread -> {
-                Frame frame = thread.frame;
-                thread.frame = thread.frame.outer;
-                thread.frame.push(frame.pop());
-            };
-        }
+        public static Instruction ret = thread -> {
+            thread.callFrame = thread.callFrame.outer;
+            thread.callFrame.incrementIP();
+        };
     }
 }

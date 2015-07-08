@@ -1,16 +1,20 @@
 package yaplstack;
 
 public class Thread {
-    public Frame frame;
+    public CallFrame callFrame;
+    public OperandFrame operandFrame;
+    public Environment environment;
     private boolean finished;
 
-    public Thread(Frame frame) {
-        this.frame = frame;
+    public Thread(CallFrame callFrame) {
+        this.callFrame = callFrame;
+        operandFrame = new OperandFrame();
+        environment = new Environment();
     }
 
     public Thread evalAll() {
         while(!finished)
-            frame.instructions[frame.ip].eval(this);
+            callFrame.instructions[callFrame.ip].eval(this);
 
         return this;
     }
