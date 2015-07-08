@@ -21,4 +21,13 @@ public class OperandFrame {
     public Object pop() {
         return stack.pop();
     }
+
+    public void dup() {
+        stack.push(stack.peek());
+    }
+
+    public void pushTo(OperandFrame operandFrame, int pushCount) {
+        for(int i = 0; i < pushCount; i++)
+            operandFrame.push(pop());
+    }
 }

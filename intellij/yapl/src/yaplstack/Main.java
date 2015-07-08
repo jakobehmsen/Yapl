@@ -21,36 +21,37 @@ public class Main {
         // storeOperandFrame
         // [...']
 
-        Load operand frame
-        Store operand frame
-        Push operand frame
-        Pop operand frame
-
-        Load current environment
-        Store current environment
-        Extend environment
-        Store in environment
-        Load from environment
-
-        call/load call frame
-        ret/pop call frame
-
         */
 
-        Object result = new Thread(new CallFrame(new Instruction[] {
+        Thread thread = new Thread(new CallFrame(new Instruction[] {
+            loadEnvironment,
+            dup,
             load(new Instruction[]{
+                loadEnvironment,
+                extend,
+                storeEnvironment,
+                pushOperandFrame(0),
+
+                loadEnvironment,
                 load(5),
-                store("x"),
+                local("x"),
                 load(7),
+                loadEnvironment,
                 load("x"),
                 addi,
+
+                popOperandFrame(1),
+                loadEnvironment,
+                outer,
+                storeEnvironment,
                 ret
             }),
-            store("myFunc"),
+            local("myFunc"),
             load("myFunc"),
             call,
             finish
-        })).evalAll().operandFrame.pop();
+        }));
+        Object result = thread.evalAll().operandFrame.pop();
 
         System.out.println(result);
     }
