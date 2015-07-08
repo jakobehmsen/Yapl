@@ -14,7 +14,7 @@ public interface Instruction {
     }
 
     class Factory {
-        public static IncIP push(Object obj) {
+        public static IncIP load(Object obj) {
             return thread -> thread.operandFrame.push(obj);
         }
 

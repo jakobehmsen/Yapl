@@ -32,16 +32,16 @@ public class Main {
         Store in environment
         Load from environment
 
-        call/push call frame
+        call/load call frame
         ret/pop call frame
 
         */
 
         Object result = new Thread(new CallFrame(new Instruction[] {
-            push(new Instruction[] {
-                push(5),
+            load(new Instruction[]{
+                load(5),
                 store("x"),
-                push(7),
+                load(7),
                 load("x"),
                 addi,
                 ret
