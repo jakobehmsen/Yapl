@@ -7,6 +7,7 @@ import java.lang.reflect.Modifier;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+// Instructions should be replaced by first class objects, that are designed to be ("more") interpretable
 public interface Instruction {
     void eval(Thread thread);
 
@@ -19,13 +20,16 @@ public interface Instruction {
     }
 
     class Factory {
+
+
         public static IncIP loadConst(Object obj) {
             return thread -> thread.operandFrame.push(obj);
         }
 
         public static IncIP dup = thread -> thread.operandFrame.dup();
-
+        public static IncIP dupx1 = thread -> thread.operandFrame.dupx1();
         public static IncIP pop = thread -> thread.operandFrame.pop();
+        public static IncIP swap = thread -> thread.operandFrame.swap();
 
         public static Instruction finish = thread -> thread.setFinished();
 

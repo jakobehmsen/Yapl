@@ -1,8 +1,9 @@
 package yaplstack;
 
-import java.util.ArrayList;
+import yaplstack.ast.AST;
+import yaplstack.ast.Generator;
 
-import static yaplstack.Instruction.Factory.*;
+import static yaplstack.ast.AST.Factory.*;
 
 public class Main {
     public static void main(String[] args) throws NoSuchMethodException {
@@ -15,9 +16,9 @@ public class Main {
         // Current environment
 
         // Store all registers:
-        // [..., operand frame, call frame, environment]
+        // [..., operand frame, visitCall frame, environment]
         // storeEnvironment
-        // [..., operand frame, call frame]
+        // [..., operand frame, visitCall frame]
         // storeCallFrame
         // [..., operand frame]
         // storeOperandFrame
@@ -25,7 +26,20 @@ public class Main {
 
         */
 
-        Thread thread = new Thread(new CallFrame(new Instruction[] {
+        AST program = program(block(
+            local("myFunc", function(new String[]{"x", "y"},
+                addi(load("x"), load("y"))
+            )),
+            local("sq", function(new String[]{"x"},
+                muli(load("x"), literal(2))
+            )),
+            call(load("myFunc"), call(load("sq"), literal(5)), literal(6))
+        ));
+        Instruction[] instructions = Generator.toInstructions(program);
+
+        Thread thread = new Thread(new CallFrame(instructions));
+
+        /*Thread thread = new Thread(new CallFrame(new Instruction[] {
             loadEnvironment,
             newInstance(ArrayList.class.getConstructor()),
             local("list"),
@@ -43,7 +57,7 @@ public class Main {
             loadEnvironment,
             load("list"),
             finish
-        }));
+        }));*/
 
         /*Thread thread = new Thread(new CallFrame(new Instruction[] {
             loadEnvironment,
@@ -93,7 +107,7 @@ public class Main {
             }),
             local("myFunc"),
             load("myFunc"),
-            call,
+            visitCall,
             finish
         }));*/
         Object result = thread.evalAll().operandFrame.pop();

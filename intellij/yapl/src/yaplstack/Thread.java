@@ -13,8 +13,12 @@ public class Thread {
     }
 
     public Thread evalAll() {
-        while(!finished)
-            callFrame.instructions[callFrame.ip].eval(this);
+        try {
+            while (!finished)
+                callFrame.instructions[callFrame.ip].eval(this);
+        } catch (Throwable e) {
+            e.toString();
+        }
 
         return this;
     }

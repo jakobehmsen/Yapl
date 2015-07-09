@@ -26,8 +26,17 @@ public class OperandFrame {
         stack.push(stack.peek());
     }
 
+    public void dupx1() {
+        stack.add(stack.size() - 2, stack.peek());
+    }
+
     public void pushTo(OperandFrame operandFrame, int pushCount) {
         for(int i = 0; i < pushCount; i++)
             operandFrame.push(pop());
+    }
+
+    public void swap() {
+        Object tmp = stack.pop();
+        stack.add(stack.size() - 1, tmp);
     }
 }
