@@ -1,6 +1,7 @@
 package yaplstack;
 
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public interface Instruction {
     void eval(Thread thread);
@@ -14,7 +15,7 @@ public interface Instruction {
     }
 
     class Factory {
-        public static IncIP load(Object obj) {
+        public static IncIP loadConst(Object obj) {
             return thread -> thread.operandFrame.push(obj);
         }
 
@@ -23,6 +24,16 @@ public interface Instruction {
         public static IncIP pop = thread -> thread.operandFrame.pop();
 
         public static Instruction finish = thread -> thread.setFinished();
+
+        public static Instruction jumpIfTrue(int ip) {
+            return thread -> {
+                boolean condition = (boolean)thread.operandFrame.pop();
+                if(condition)
+                    thread.callFrame.setIP(ip);
+                else
+                    thread.callFrame.incrementIP();
+            };
+        }
 
         public static IncIP local(String name) {
             return thread -> {
@@ -102,18 +113,33 @@ public interface Instruction {
             thread.operandFrame.push(environment.outer);
         };
 
-        private static <T, R, S> IncIP binaryReducer(BiFunction<R, T, S> reducer) {
+        private static <T, R> IncIP unaryReducer(Function<T, R> reducer) {
             return thread -> {
-                R operand2 = (R)thread.operandFrame.pop();
-                T operand1 = (T)thread.operandFrame.pop();
-                S res = reducer.apply(operand2, operand1);
+                T operand = (T)thread.operandFrame.pop();
+                R res = reducer.apply(operand);
                 thread.operandFrame.push(res);
             };
         }
+
+        private static <T, R, S> IncIP binaryReducer(BiFunction<T, R, S> reducer) {
+            return thread -> {
+                R operand2 = (R)thread.operandFrame.pop();
+                T operand1 = (T)thread.operandFrame.pop();
+                S res = reducer.apply(operand1, operand2);
+                thread.operandFrame.push(res);
+            };
+        }
+
+        public static IncIP not = unaryReducer((Boolean b) -> !b);
+        public static IncIP and = binaryReducer((Boolean lhs, Boolean rhs) -> lhs && rhs);;
+        public static IncIP or = binaryReducer((Boolean lhs, Boolean rhs) -> lhs || rhs);;
 
         public static IncIP addi = binaryReducer((Integer lhs, Integer rhs) -> lhs + rhs);
         public static IncIP subi = binaryReducer((Integer lhs, Integer rhs) -> lhs - rhs);
         public static IncIP muli = binaryReducer((Integer lhs, Integer rhs) -> lhs * rhs);
         public static IncIP divi = binaryReducer((Integer lhs, Integer rhs) -> lhs / rhs);
+        public static IncIP lti = binaryReducer((Integer lhs, Integer rhs) -> lhs < rhs);
+        public static IncIP gti = binaryReducer((Integer lhs, Integer rhs) -> lhs > rhs);
+        public static IncIP eqi = binaryReducer((Integer lhs, Integer rhs) -> lhs == rhs);
     }
 }

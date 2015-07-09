@@ -25,17 +25,39 @@ public class Main {
 
         Thread thread = new Thread(new CallFrame(new Instruction[] {
             loadEnvironment,
+            loadConst(0),
+            local("i"),
+            loadEnvironment,
+            load("i"),
+            loadConst(10),
+            lti,
+            not,
+            jumpIfTrue(17),
+            loadEnvironment,
+            loadEnvironment,
+            load("i"),
+            loadConst(1),
+            addi,
+            store("i"),
+            loadConst(true),
+            jumpIfTrue(3),
+            loadEnvironment,
+            load("i"),
+            finish
+        }));
+        /*Thread thread = new Thread(new CallFrame(new Instruction[] {
+            loadEnvironment,
             dup,
-            load(new Instruction[]{
+            loadConst(new Instruction[]{
                 loadEnvironment,
                 extend,
                 storeEnvironment,
                 pushOperandFrame(0),
 
                 loadEnvironment,
-                load(5),
+                loadConst(5),
                 local("x"),
-                load(7),
+                loadConst(7),
                 loadEnvironment,
                 load("x"),
                 addi,
@@ -50,7 +72,7 @@ public class Main {
             load("myFunc"),
             call,
             finish
-        }));
+        }));*/
         Object result = thread.evalAll().operandFrame.pop();
 
         System.out.println(result);
