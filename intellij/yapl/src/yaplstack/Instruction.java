@@ -1,5 +1,9 @@
 package yaplstack;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -141,5 +145,50 @@ public interface Instruction {
         public static IncIP lti = binaryReducer((Integer lhs, Integer rhs) -> lhs < rhs);
         public static IncIP gti = binaryReducer((Integer lhs, Integer rhs) -> lhs > rhs);
         public static IncIP eqi = binaryReducer((Integer lhs, Integer rhs) -> lhs == rhs);
+
+        public static IncIP newInstance(Constructor<?> constructor) {
+            return thread -> {
+                int argCount = constructor.getParameterCount();
+                Object[] args = new Object[argCount];
+                for(int i = argCount - 1; i >= 0; i--)
+                    args[i] = thread.operandFrame.pop();
+                Object res = null;
+                try {
+                    res = constructor.newInstance(args);
+                    thread.operandFrame.push(res);
+                } catch (InstantiationException e) {
+                    e.printStackTrace();
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                } catch (InvocationTargetException e) {
+                    e.printStackTrace();
+                }
+
+                // How to handle exceptions?
+            };
+        }
+
+        public static IncIP invoke(Method method) {
+            boolean instance = !Modifier.isStatic(method.getModifiers());
+
+            return thread -> {
+                int argCount = method.getParameterCount();
+                Object[] args = new Object[argCount];
+                for(int i = argCount - 1; i >= 0; i--)
+                    args[i] = thread.operandFrame.pop();
+                Object obj = instance ? thread.operandFrame.pop() : null;
+                Object res = null;
+                try {
+                    res = method.invoke(obj, args);
+                    thread.operandFrame.push(res);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                } catch (InvocationTargetException e) {
+                    e.printStackTrace();
+                }
+
+                // How to handle exceptions?
+            };
+        }
     }
 }

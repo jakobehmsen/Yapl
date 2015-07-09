@@ -1,9 +1,11 @@
 package yaplstack;
 
+import java.util.ArrayList;
+
 import static yaplstack.Instruction.Factory.*;
 
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws NoSuchMethodException {
         /*
         What primivites are necessary to simulate tradition function calls?
 
@@ -25,6 +27,26 @@ public class Main {
 
         Thread thread = new Thread(new CallFrame(new Instruction[] {
             loadEnvironment,
+            newInstance(ArrayList.class.getConstructor()),
+            local("list"),
+
+            loadEnvironment,
+            load("list"),
+            loadConst(5),
+            invoke(ArrayList.class.getMethod("add", Object.class)),
+
+            loadEnvironment,
+            load("list"),
+            loadConst(7),
+            invoke(ArrayList.class.getMethod("add", Object.class)),
+
+            loadEnvironment,
+            load("list"),
+            finish
+        }));
+
+        /*Thread thread = new Thread(new CallFrame(new Instruction[] {
+            loadEnvironment,
             loadConst(0),
             local("i"),
             loadEnvironment,
@@ -44,7 +66,8 @@ public class Main {
             loadEnvironment,
             load("i"),
             finish
-        }));
+        }));*/
+
         /*Thread thread = new Thread(new CallFrame(new Instruction[] {
             loadEnvironment,
             dup,
