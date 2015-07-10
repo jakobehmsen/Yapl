@@ -1,9 +1,6 @@
 package yaplstack;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -188,6 +185,39 @@ public interface Instruction {
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
                 } catch (InvocationTargetException e) {
+                    e.printStackTrace();
+                }
+
+                // How to handle exceptions?
+            };
+        }
+
+        public static IncIP fieldGet(Field field) {
+            boolean instance = !Modifier.isStatic(field.getModifiers());
+
+            return thread -> {
+                Object obj = instance ? thread.operandFrame.pop() : null;
+                Object res = null;
+                try {
+                    res = field.get(obj);
+                    thread.operandFrame.push(res);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+
+                // How to handle exceptions?
+            };
+        }
+
+        public static IncIP fieldSet(Field field) {
+            boolean instance = !Modifier.isStatic(field.getModifiers());
+
+            return thread -> {
+                Object value = thread.operandFrame.pop();
+                Object obj = instance ? thread.operandFrame.pop() : null;
+                try {
+                    field.set(obj, value);
+                } catch (IllegalAccessException e) {
                     e.printStackTrace();
                 }
 
