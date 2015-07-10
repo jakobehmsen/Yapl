@@ -26,7 +26,7 @@ public class Main {
 
         */
 
-        AST program = program(block(
+        /*AST program = program(block(
             local("myFunc", function(new String[]{"x", "y"},
                 addi(load("x"), load("y"))
             )),
@@ -34,6 +34,14 @@ public class Main {
                 muli(load("x"), literal(2))
             )),
             call(load("myFunc"), call(load("sq"), literal(5)), literal(6))
+        ));*/
+        AST program = program(block(
+            local("x", literal(5)),
+            local("y", literal(9)),
+            test(gti(load("x"), load("y")),
+                literal(true),
+                literal(false)
+            )
         ));
         Instruction[] instructions = Generator.toInstructions(program);
 

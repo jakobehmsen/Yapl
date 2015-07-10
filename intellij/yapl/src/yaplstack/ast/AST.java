@@ -13,12 +13,18 @@ public interface AST {
         T visitFunction(List<String> params, AST code);
         T visitLiteral(Object obj);
         T visitAddi(AST lhs, AST rhs);
+        T visitSubi(AST lhs, AST rhs);
         T visitMuli(AST lhs, AST rhs);
+        T visitDivi(AST lhs, AST rhs);
+        T visitLti(AST lhs, AST rhs);
+        T visitGti(AST lhs, AST rhs);
+        T visitEqi(AST lhs, AST rhs);
         T visitInvoke(AST target, Method method, List<AST> args);
         T visitLocal(String name, AST value);
         T visitStore(String name, AST value);
         T visitLoad(String name);
         T visitCall(AST target, List<AST> asts);
+        T visitTest(AST condition, AST ifTrue, AST ifFalse);
     }
 
     class Factory {
@@ -85,6 +91,15 @@ public interface AST {
             };
         }
 
+        public static AST test(AST condition, AST ifTrue, AST ifFalse) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitTest(condition, ifTrue, ifFalse);
+                }
+            };
+        }
+
         public static AST literal(Object obj) {
             return new AST() {
                 @Override
@@ -112,11 +127,56 @@ public interface AST {
             };
         }
 
+        public static AST subi(AST lhs, AST rhs) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitSubi(lhs, rhs);
+                }
+            };
+        }
+
         public static AST muli(AST lhs, AST rhs) {
             return new AST() {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitMuli(lhs, rhs);
+                }
+            };
+        }
+
+        public static AST divi(AST lhs, AST rhs) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitDivi(lhs, rhs);
+                }
+            };
+        }
+
+        public static AST lti(AST lhs, AST rhs) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitLti(lhs, rhs);
+                }
+            };
+        }
+
+        public static AST gti(AST lhs, AST rhs) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitGti(lhs, rhs);
+                }
+            };
+        }
+
+        public static AST eqi(AST lhs, AST rhs) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitEqi(lhs, rhs);
                 }
             };
         }
