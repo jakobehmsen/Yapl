@@ -1,5 +1,6 @@
 package yaplstack.ast;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
@@ -20,6 +21,8 @@ public interface AST {
         T visitGti(AST lhs, AST rhs);
         T visitEqi(AST lhs, AST rhs);
         T visitInvoke(AST target, Method method, List<AST> args);
+        T visitFieldGet(AST target, Field field);
+        T visitFieldSet(AST target, Field field, AST value);
         T visitLocal(String name, AST value);
         T visitStore(String name, AST value);
         T visitLoad(String name);
@@ -114,6 +117,24 @@ public interface AST {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitInvoke(target, method, Arrays.asList(args));
+                }
+            };
+        }
+
+        public static AST fieldGet(AST target, Field field) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitFieldGet(target, field);
+                }
+            };
+        }
+
+        public static AST fieldSet(AST target, Field field, AST value) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitFieldSet(target, field, value);
                 }
             };
         }

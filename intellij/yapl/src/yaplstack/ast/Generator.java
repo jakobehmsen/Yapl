@@ -2,6 +2,7 @@ package yaplstack.ast;
 
 import yaplstack.Instruction;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -217,6 +218,16 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitInvoke(AST target, Method method, List<AST> args) {
+        return null;
+    }
+
+    @Override
+    public Void visitFieldGet(AST target, Field field) {
+        return null;
+    }
+
+    @Override
+    public Void visitFieldSet(AST target, Field field, AST value) {
         return null;
     }
 
