@@ -1,5 +1,6 @@
 package yaplstack.ast;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -20,8 +21,12 @@ public interface AST {
         T visitLti(AST lhs, AST rhs);
         T visitGti(AST lhs, AST rhs);
         T visitEqi(AST lhs, AST rhs);
+        T visitNewInstance(Constructor constructor, List<AST> args);
+        T visitInvoke(Method method, List<AST> args);
         T visitInvoke(AST target, Method method, List<AST> args);
+        T visitFieldGet(Field field);
         T visitFieldGet(AST target, Field field);
+        T visitFieldSet(Field field, AST value);
         T visitFieldSet(AST target, Field field, AST value);
         T visitLocal(String name, AST value);
         T visitStore(String name, AST value);
@@ -112,6 +117,24 @@ public interface AST {
             };
         }
 
+        public static AST newInstance(Constructor constructor, AST... args) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitNewInstance(constructor, Arrays.asList(args));
+                }
+            };
+        }
+
+        public static AST invoke(Method method, AST... args) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitInvoke(method, Arrays.asList(args));
+                }
+            };
+        }
+
         public static AST invoke(AST target, Method method, AST... args) {
             return new AST() {
                 @Override
@@ -121,11 +144,29 @@ public interface AST {
             };
         }
 
+        public static AST fieldGet(Field field) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitFieldGet(field);
+                }
+            };
+        }
+
         public static AST fieldGet(AST target, Field field) {
             return new AST() {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitFieldGet(target, field);
+                }
+            };
+        }
+
+        public static AST fieldSet(Field field, AST value) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitFieldSet(field, value);
                 }
             };
         }

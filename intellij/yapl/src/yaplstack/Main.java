@@ -3,10 +3,12 @@ package yaplstack;
 import yaplstack.ast.AST;
 import yaplstack.ast.Generator;
 
+import java.io.PrintStream;
+
 import static yaplstack.ast.AST.Factory.*;
 
 public class Main {
-    public static void main(String[] args) throws NoSuchMethodException {
+    public static void main(String[] args) throws NoSuchMethodException, NoSuchFieldException {
         /*
         What primivites are necessary to simulate tradition function calls?
 
@@ -38,9 +40,11 @@ public class Main {
         AST program = program(block(
             local("x", literal(5)),
             local("y", literal(9)),
-            test(gti(load("x"), load("y")),
-                literal(true),
-                literal(false)
+            test(lti(load("x"), load("y")),
+                invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), literal("YES!!!")),
+                invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), literal("No..."))
+                //literal(true),
+                //literal(false)
             )
         ));
         Instruction[] instructions = Generator.toInstructions(program);

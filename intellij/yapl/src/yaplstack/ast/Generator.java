@@ -2,6 +2,7 @@ package yaplstack.ast;
 
 import yaplstack.Instruction;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -217,17 +218,59 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
+    public Void visitNewInstance(Constructor constructor, List<AST> args) {
+        args.forEach(x -> visitAsExpression(x));
+        emit(Instruction.Factory.newInstance(constructor));
+
+        return null;
+    }
+
+    @Override
+    public Void visitInvoke(Method method, List<AST> args) {
+        args.forEach(x -> visitAsExpression(x));
+        emit(Instruction.Factory.invoke(method));
+
+        return null;
+    }
+
+    @Override
     public Void visitInvoke(AST target, Method method, List<AST> args) {
+        visitAsExpression(target);
+        args.forEach(x -> visitAsExpression(x));
+        emit(Instruction.Factory.invoke(method));
+
+        return null;
+    }
+
+    @Override
+    public Void visitFieldGet(Field field) {
+        emit(Instruction.Factory.fieldGet(field));
+
         return null;
     }
 
     @Override
     public Void visitFieldGet(AST target, Field field) {
+        visitAsExpression(target);
+        emit(Instruction.Factory.fieldGet(field));
+
+        return null;
+    }
+
+    @Override
+    public Void visitFieldSet(Field field, AST value) {
+        visitAsExpression(value);
+        emit(Instruction.Factory.fieldSet(field));
+
         return null;
     }
 
     @Override
     public Void visitFieldSet(AST target, Field field, AST value) {
+        visitAsExpression(target);
+        visitAsExpression(value);
+        emit(Instruction.Factory.fieldSet(field));
+
         return null;
     }
 
