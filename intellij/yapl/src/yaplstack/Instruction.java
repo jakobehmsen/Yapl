@@ -82,12 +82,23 @@ public interface Instruction {
         public static IncIP storeCallFrame = thread ->
             thread.callFrame = (CallFrame)thread.operandFrame.pop();
 
-        public static Instruction call = thread -> {
+        public static Instruction pushCallFrame = thread -> {
             Instruction[] instructions = (Instruction[])thread.operandFrame.pop();
             thread.callFrame = new CallFrame(thread.callFrame, instructions);
         };
 
-        public static Instruction ret = thread -> {
+        public static Instruction pushConditionalCallFrame = thread -> {
+            boolean condition = (boolean)thread.operandFrame.pop();;
+            Instruction[] instructionsIfFalse = (Instruction[])thread.operandFrame.pop();
+            Instruction[] instructionsIfTrue = (Instruction[])thread.operandFrame.pop();
+
+            if(condition)
+                thread.callFrame = new CallFrame(thread.callFrame, instructionsIfTrue);
+            else
+                thread.callFrame = new CallFrame(thread.callFrame, instructionsIfFalse);
+        };
+
+        public static Instruction popCallFrame = thread -> {
             thread.callFrame = thread.callFrame.outer;
             thread.callFrame.incrementIP();
         };
@@ -108,14 +119,19 @@ public interface Instruction {
             };
         }
 
-        public static IncIP extend = thread -> {
+        public static IncIP extendEnvironment = thread -> {
             Environment environment = (Environment)thread.operandFrame.pop();
             thread.operandFrame.push(new Environment(environment));
         };
 
-        public static IncIP outer = thread -> {
+        public static IncIP outerEnvironment = thread -> {
             Environment environment = (Environment)thread.operandFrame.pop();
             thread.operandFrame.push(environment.outer);
+        };
+
+        public static IncIP outerCallFrame = thread -> {
+            CallFrame callFrame = (CallFrame)thread.operandFrame.pop();
+            thread.operandFrame.push(callFrame.outer);
         };
 
         private static <T, R> IncIP unaryReducer(Function<T, R> reducer) {

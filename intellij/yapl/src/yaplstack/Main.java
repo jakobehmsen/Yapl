@@ -35,7 +35,7 @@ public class Main {
             local("sq", function(new String[]{"x"},
                 muli(load("x"), literal(2))
             )),
-            call(load("myFunc"), call(load("sq"), literal(5)), literal(6))
+            pushCallFrame(load("myFunc"), pushCallFrame(load("sq"), literal(5)), literal(6))
         ));*/
         AST program = program(block(
             local("x", literal(5)),
@@ -99,7 +99,7 @@ public class Main {
             dup,
             loadConst(new Instruction[]{
                 loadEnvironment,
-                extend,
+                extendEnvironment,
                 storeEnvironment,
                 pushOperandFrame(0),
 
@@ -113,9 +113,9 @@ public class Main {
 
                 popOperandFrame(1),
                 loadEnvironment,
-                outer,
+                outerEnvironment,
                 storeEnvironment,
-                ret
+                popCallFrame
             }),
             local("myFunc"),
             load("myFunc"),

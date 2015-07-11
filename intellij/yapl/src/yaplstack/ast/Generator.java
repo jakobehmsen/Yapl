@@ -6,15 +6,18 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.function.Consumer;
 
 public class Generator implements AST.Visitor<Void> {
     private boolean asExpression;
-    private List<Supplier<Instruction>> instructions;
+    private List<Instruction> instructions;
 
-    public Generator(boolean asExpression, List<Supplier<Instruction>> instructions) {
+    public Generator(boolean asExpression) {
+        this(asExpression, new ArrayList<>());
+    }
+
+    public Generator(boolean asExpression, List<Instruction> instructions) {
         this.instructions = instructions;
         this.asExpression = asExpression;
     }
@@ -42,11 +45,10 @@ public class Generator implements AST.Visitor<Void> {
     @Override
     public Void visitFunction(List<String> params, AST code) {
         if(asExpression) {
-            ArrayList<Supplier<Instruction>> instructions = new ArrayList<>();
-            Generator generator = new Generator(true, instructions);
+            Generator generator = new Generator(true);
 
             generator.emit(Instruction.Factory.loadEnvironment);
-            generator.emit(Instruction.Factory.extend);
+            generator.emit(Instruction.Factory.extendEnvironment);
             generator.emit(Instruction.Factory.storeEnvironment);
 
             for(int i = params.size() - 1; i >= 0; i--) {
@@ -61,27 +63,27 @@ public class Generator implements AST.Visitor<Void> {
 
             generator.emit(Instruction.Factory.popOperandFrame(1));
             generator.emit(Instruction.Factory.loadEnvironment);
-            generator.emit(Instruction.Factory.outer);
+            generator.emit(Instruction.Factory.outerEnvironment);
             generator.emit(Instruction.Factory.storeEnvironment);
-            generator.emit(Instruction.Factory.ret);
+            generator.emit(Instruction.Factory.popCallFrame);
 
             Instruction[] instructionArray = generator.generate();
 
-            emit(Instruction.Factory.loadConst(instructions.toArray(instructionArray)));
+            emit(Instruction.Factory.loadConst(instructionArray));
         }
 
         return null;
     }
 
     private Instruction[] generate() {
-        return instructions.stream().map(x -> x.get()).toArray(s -> new Instruction[s]);
+        return instructions.stream().toArray(s -> new Instruction[s]);
     }
 
     @Override
     public Void visitCall(AST target, List<AST> asts) {
         asts.forEach(x -> visitAsExpression(x));
         visitAsExpression(target);
-        emit(Instruction.Factory.call);
+        emit(Instruction.Factory.pushCallFrame);
 
         if(!asExpression)
             emit(Instruction.Factory.pop);
@@ -91,45 +93,12 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitTest(AST condition, AST ifTrue, AST ifFalse) {
+        emit(Instruction.Factory.loadConst(toInstructions(ifTrue, g -> { }, g -> g.emit(Instruction.Factory.popCallFrame))));
+        emit(Instruction.Factory.loadConst(toInstructions(ifFalse, g -> { }, g -> g.emit(Instruction.Factory.popCallFrame))));
         visitAsExpression(condition);
-
-        Object labelIfTrue = label();
-        Object labelEnd = label();
-
-        jumpIfTrue(labelIfTrue);
-
-        ifFalse.accept(this);
-        jump(labelEnd);
-
-        mark(labelIfTrue);
-        ifTrue.accept(this);
-
-        mark(labelEnd);
+        emit(Instruction.Factory.pushConditionalCallFrame);
 
         return null;
-    }
-
-    private void jump(Object label) {
-        emit(Instruction.Factory.loadConst(true));
-        jumpIfTrue(label);
-    }
-
-    private void jumpIfTrue(Object label) {
-        emit(() -> {
-            int ip = labelsToIP.get(label);
-            return Instruction.Factory.jumpIfTrue(ip);
-        });
-    }
-
-    private Hashtable<Object, Integer> labelsToIP = new Hashtable<>();
-
-    private Object label() {
-        return new Object();
-    }
-
-    private void mark(Object label) {
-        int ip = instructions.size();
-        labelsToIP.put(label, ip);
     }
 
     @Override
@@ -321,17 +290,18 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     private void emit(Instruction instruction) {
-        emit(() -> instruction);
-    }
-
-    private void emit(Supplier<Instruction> instruction) {
         instructions.add(instruction);
     }
 
     public static Instruction[] toInstructions(AST code) {
-        ArrayList<Supplier<Instruction>> instructions = new ArrayList<>();
-        Generator generator = new Generator(true, instructions);
-        code.accept(new Generator(true, instructions));
+        return toInstructions(code, g -> { }, g -> { });
+    }
+
+    private static Instruction[] toInstructions(AST code, Consumer<Generator> pre, Consumer<Generator> post) {
+        Generator generator = new Generator(true);
+        pre.accept(generator);
+        code.accept(generator);
+        post.accept(generator);
         return generator.generate();
     }
 }
