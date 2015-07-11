@@ -17,8 +17,4 @@ public class CallFrame {
     public void incrementIP() {
         ip++;
     }
-
-    public void setIP(int ip) {
-        this.ip = ip;
-    }
 }

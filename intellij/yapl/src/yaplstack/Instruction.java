@@ -30,16 +30,6 @@ public interface Instruction {
 
         public static Instruction finish = thread -> thread.setFinished();
 
-        public static Instruction jumpIfTrue(int ip) {
-            return thread -> {
-                boolean condition = (boolean)thread.operandFrame.pop();
-                if(condition)
-                    thread.callFrame.setIP(ip);
-                else
-                    thread.callFrame.incrementIP();
-            };
-        }
-
         public static IncIP local(String name) {
             return thread -> {
                 Object value = thread.operandFrame.pop();
