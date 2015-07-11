@@ -37,7 +37,7 @@ public class Main {
             )),
             pushCallFrame(load("myFunc"), pushCallFrame(load("sq"), literal(5)), literal(6))
         ));*/
-        AST program = program(block(
+        /*AST program = program(block(
             local("x", literal(5)),
             local("y", literal(9)),
             test(lti(load("x"), load("y")),
@@ -46,6 +46,13 @@ public class Main {
                 //literal(true),
                 //literal(false)
             )
+        ));*/
+        AST program = program(block(
+            local("x", literal(0)),
+            loop(lti(load("x"), literal(100)),
+                store("x", addi(load("x"), literal(1)))
+            ),
+            load("x")
         ));
         Instruction[] instructions = Generator.toInstructions(program);
 

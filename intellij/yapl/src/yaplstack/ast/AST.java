@@ -33,6 +33,7 @@ public interface AST {
         T visitLoad(String name);
         T visitCall(AST target, List<AST> asts);
         T visitTest(AST condition, AST ifTrue, AST ifFalse);
+        T visitLoop(AST condition, AST body);
     }
 
     class Factory {
@@ -104,6 +105,15 @@ public interface AST {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitTest(condition, ifTrue, ifFalse);
+                }
+            };
+        }
+
+        public static AST loop(AST condition, AST body) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitLoop(condition, body);
                 }
             };
         }

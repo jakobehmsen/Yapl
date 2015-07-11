@@ -77,6 +77,12 @@ public interface Instruction {
             thread.callFrame = new CallFrame(thread.callFrame, instructions);
         };
 
+        public static Instruction pushCallFrameFrom = thread -> {
+            Instruction[] instructions = (Instruction[])thread.operandFrame.pop();
+            CallFrame callFrame = (CallFrame)thread.operandFrame.pop();
+            thread.callFrame = new CallFrame(callFrame, instructions);
+        };
+
         public static Instruction pushConditionalCallFrame = thread -> {
             boolean condition = (boolean)thread.operandFrame.pop();;
             Instruction[] instructionsIfFalse = (Instruction[])thread.operandFrame.pop();
@@ -122,6 +128,11 @@ public interface Instruction {
         public static IncIP outerCallFrame = thread -> {
             CallFrame callFrame = (CallFrame)thread.operandFrame.pop();
             thread.operandFrame.push(callFrame.outer);
+        };
+
+        public static IncIP callFrameInstructions = thread -> {
+            CallFrame callFrame = (CallFrame)thread.operandFrame.pop();
+            thread.operandFrame.push(callFrame.instructions);
         };
 
         private static <T, R> IncIP unaryReducer(Function<T, R> reducer) {

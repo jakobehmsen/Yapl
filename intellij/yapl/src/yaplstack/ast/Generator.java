@@ -102,6 +102,58 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
+    public Void visitLoop(AST condition, AST body) {
+        /*
+        instructions = {
+            test(
+                condition,
+                {
+                    body
+                    loadCallFrame
+                    callFrameOuter
+                    dup
+                    callFrameInstructions
+                    pushCallFrameFrom
+                }
+                popCallFrame
+            )
+            popCallFrame
+        }
+        loadConst(instructions)
+        pushCallFrame
+        */
+
+        Generator ifTrueGenerator = new Generator(false);
+        body.accept(ifTrueGenerator);
+        ifTrueGenerator.emit(Instruction.Factory.loadCallFrame);            // [..., test call frame]
+        ifTrueGenerator.emit(Instruction.Factory.outerCallFrame);           // [..., body call frame]
+        ifTrueGenerator.emit(Instruction.Factory.dup);                      // [..., body call frame, body call frame]
+        ifTrueGenerator.emit(Instruction.Factory.outerCallFrame);           // [..., body call frame, loop call frame]
+        ifTrueGenerator.emit(Instruction.Factory.swap);                     // [..., loop call frame, body call frame]
+        ifTrueGenerator.emit(Instruction.Factory.callFrameInstructions);    // [..., loop call frame, body call frame instructions]
+        ifTrueGenerator.emit(Instruction.Factory.pushCallFrameFrom);        // [...]
+
+        Generator ifFalseGenerator = new Generator(false);
+        ifFalseGenerator.emit(Instruction.Factory.popCallFrame);
+
+        Generator loopGenerator = new Generator(false);
+
+        loopGenerator.emit(Instruction.Factory.loadConst(ifTrueGenerator.generate()));
+        loopGenerator.emit(Instruction.Factory.loadConst(ifFalseGenerator.generate()));
+        loopGenerator.visitAsExpression(condition);
+        loopGenerator.emit(Instruction.Factory.pushConditionalCallFrame);
+        loopGenerator.emit(Instruction.Factory.popCallFrame);
+
+        emit(Instruction.Factory.loadConst(loopGenerator.generate()));
+        emit(Instruction.Factory.pushCallFrame);
+
+        if(asExpression)
+            emit(Instruction.Factory.loadConst(null));
+
+        return null;
+    }
+
+    @Override
     public Void visitLiteral(Object obj) {
         if(asExpression)
             emit(Instruction.Factory.loadConst(obj));
