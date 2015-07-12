@@ -6,20 +6,38 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class Generator implements AST.Visitor<Void> {
     private boolean asExpression;
-    private List<Instruction> instructions;
+    private List<Supplier<Instruction>> instructions;
+    private Map<Object, Integer> labelToIP = new Hashtable<>();
 
     public Generator(boolean asExpression) {
-        this(asExpression, new ArrayList<>());
+        this(asExpression, new ArrayList<>(), new Hashtable<>());
     }
 
-    public Generator(boolean asExpression, List<Instruction> instructions) {
+    public Generator(boolean asExpression, List<Supplier<Instruction>> instructions, Map<Object, Integer> labelToIP) {
         this.instructions = instructions;
         this.asExpression = asExpression;
+        this.labelToIP = labelToIP;
+    }
+
+    private void mark(Object label) {
+        int ip = labelToIP.size();
+        labelToIP.put(label, ip);
+    }
+
+    private void emitJump(Object label, Function<Integer, Instruction> instructionFunction) {
+        emit(() -> {
+            int ip = labelToIP.get(label);
+            return instructionFunction.apply(ip);
+        });
     }
 
     @Override
@@ -94,7 +112,8 @@ public class Generator implements AST.Visitor<Void> {
     @Override
     public Void visitTest(AST condition, AST ifTrue, AST ifFalse) {
         emit(Instruction.Factory.loadConst(toInstructions(ifTrue, g -> { }, g -> g.emit(Instruction.Factory.popCallFrame))));
-        emit(Instruction.Factory.loadConst(toInstructions(ifFalse, g -> { }, g -> g.emit(Instruction.Factory.popCallFrame))));
+        emit(Instruction.Factory.loadConst(toInstructions(ifFalse, g -> {
+        }, g -> g.emit(Instruction.Factory.popCallFrame))));
         visitAsExpression(condition);
         emit(Instruction.Factory.pushConditionalCallFrame);
 
@@ -332,16 +351,20 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     private void visitAsExpression(AST expression) {
-        Generator generator = new Generator(true, instructions);
+        Generator generator = new Generator(true, instructions, labelToIP);
         expression.accept(generator);
     }
 
     private void visitAsStatement(AST expression) {
-        Generator generator = new Generator(false, instructions);
+        Generator generator = new Generator(false, instructions, labelToIP);
         expression.accept(generator);
     }
 
     private void emit(Instruction instruction) {
+        emit(() -> instruction);
+    }
+
+    private void emit(Supplier<Instruction> instruction) {
         instructions.add(instruction);
     }
 
