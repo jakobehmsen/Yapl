@@ -29,7 +29,7 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     private void mark(Object label) {
-        int index = labelToIndex.size();
+        int index = instructions.size();
         labelToIndex.put(label, index);
     }
 
@@ -94,7 +94,7 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     private Instruction[] generate() {
-        return instructions.stream().toArray(s -> new Instruction[s]);
+        return instructions.stream().map(x -> x.get()).toArray(s -> new Instruction[s]);
     }
 
     @Override
@@ -111,11 +111,29 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitTest(AST condition, AST ifTrue, AST ifFalse) {
-        emit(Instruction.Factory.loadConst(toInstructions(ifTrue, g -> { }, g -> g.emit(Instruction.Factory.popCallFrame))));
+        /*emit(Instruction.Factory.loadConst(toInstructions(ifTrue, g -> { }, g -> g.emit(Instruction.Factory.popCallFrame))));
         emit(Instruction.Factory.loadConst(toInstructions(ifFalse, g -> {
         }, g -> g.emit(Instruction.Factory.popCallFrame))));
         visitAsExpression(condition);
-        emit(Instruction.Factory.pushConditionalCallFrame);
+        emit(Instruction.Factory.pushConditionalCallFrame);*/
+
+        visitAsExpression(condition);
+
+        Object labelIfTrue = new Object();
+        Object labelEnd = new Object();
+
+        emitJump(labelIfTrue, index ->
+            Instruction.Factory.jumpIfTrue(index));
+
+        ifFalse.accept(this);
+        emit(Instruction.Factory.loadConst(true));
+        emitJump(labelEnd, index ->
+            Instruction.Factory.jumpIfTrue(index));
+
+        mark(labelIfTrue);
+        ifTrue.accept(this);
+
+        mark(labelEnd);
 
         return null;
     }
