@@ -10,7 +10,7 @@ import static yaplstack.ast.AST.Factory.*;
 public class Main {
     public static void main(String[] args) throws NoSuchMethodException, NoSuchFieldException {
         /*
-        What primivites are necessary to simulate tradition function calls?
+        What primivites are necessary to simulate tradition fn calls?
 
         // Three registers:
         // Operand frame
@@ -18,9 +18,9 @@ public class Main {
         // Current environment
 
         // Store all registers:
-        // [..., operand frame, visitCall frame, environment]
+        // [..., operand frame, visitApply frame, environment]
         // storeEnvironment
-        // [..., operand frame, visitCall frame]
+        // [..., operand frame, visitApply frame]
         // storeCallFrame
         // [..., operand frame]
         // storeOperandFrame
@@ -28,25 +28,31 @@ public class Main {
 
         */
 
+        AST program = program(block(
+            defun("strconcat", new String[]{"x", "y"}, invoke(load("x"), String.class.getMethod("concat", String.class), load("y"))),
+            defun("exclamator", new String[]{"x"}, call("strconcat", load("x"), literal("!!!"))),
+            call("exclamator", literal("Hello world"))
+        ));
+
+
+
         /*AST program = program(block(
-            local("myFunc", function(new String[]{"x", "y"},
+            local("myFunc", fn(new String[]{"x", "y"},
                 addi(load("x"), load("y"))
             )),
-            local("sq", function(new String[]{"x"},
+            local("sq", fn(new String[]{"x"},
                 muli(load("x"), literal(2))
             )),
             pushCallFrame(load("myFunc"), pushCallFrame(load("sq"), literal(5)), literal(6))
         ));*/
-        AST program = program(block(
+        /*AST program = program(block(
             local("x", literal(5)),
             local("y", literal(9)),
             test(lti(load("x"), load("y")),
                 invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), literal("YES!!!")),
                 invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), literal("No..."))
-                //literal(true),
-                //literal(false)
             )
-        ));
+        ));*/
         /*AST program = program(block(
             local("x", literal(0)),
             loop(lti(load("x"), literal(10)),
@@ -126,7 +132,7 @@ public class Main {
             }),
             local("myFunc"),
             load("myFunc"),
-            visitCall,
+            visitApply,
             finish
         }));*/
         Object result = thread.evalAll().operandFrame.pop();

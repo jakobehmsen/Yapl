@@ -70,7 +70,7 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
-    public Void visitFunction(List<String> params, AST code) {
+    public Void visitFN(List<String> params, AST code) {
         if(asExpression) {
             Generator generator = new Generator(true);
 
@@ -107,7 +107,7 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
-    public Void visitCall(AST target, List<AST> asts) {
+    public Void visitApply(AST target, List<AST> asts) {
         asts.forEach(x -> visitAsExpression(x));
         visitAsExpression(target);
         emit(Instruction.Factory.pushCallFrame);

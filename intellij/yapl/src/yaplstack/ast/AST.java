@@ -12,7 +12,7 @@ public interface AST {
     interface Visitor<T> {
         T visitProgram(AST code);
         T visitBlock(List<AST> code);
-        T visitFunction(List<String> params, AST code);
+        T visitFN(List<String> params, AST code);
         T visitLiteral(Object obj);
         T visitAddi(AST lhs, AST rhs);
         T visitSubi(AST lhs, AST rhs);
@@ -31,7 +31,7 @@ public interface AST {
         T visitLocal(String name, AST value);
         T visitStore(String name, AST value);
         T visitLoad(String name);
-        T visitCall(AST target, List<AST> asts);
+        T visitApply(AST target, List<AST> asts);
         T visitTest(AST condition, AST ifTrue, AST ifFalse);
         T visitLoop(AST condition, AST body);
     }
@@ -55,11 +55,15 @@ public interface AST {
             };
         }
 
-        public static AST function(String[] params, AST code) {
+        public static AST defun(String name, String[] params, AST code) {
+            return local(name, fn(params, code));
+        }
+
+        public static AST fn(String[] params, AST code) {
             return new AST() {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
-                    return visitor.visitFunction(Arrays.asList(params), code);
+                    return visitor.visitFN(Arrays.asList(params), code);
                 }
             };
         }
@@ -91,13 +95,17 @@ public interface AST {
             };
         }
 
-        public static AST call(AST target, AST... arguments) {
+        public static AST apply(AST target, AST... arguments) {
             return new AST() {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
-                    return visitor.visitCall(target, Arrays.asList(arguments));
+                    return visitor.visitApply(target, Arrays.asList(arguments));
                 }
             };
+        }
+
+        public static AST call(String name, AST... arguments) {
+            return apply(load(name), arguments);
         }
 
         public static AST test(AST condition, AST ifTrue, AST ifFalse) {
