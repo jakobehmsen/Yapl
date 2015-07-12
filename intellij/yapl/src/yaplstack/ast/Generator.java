@@ -16,27 +16,27 @@ import java.util.function.Supplier;
 public class Generator implements AST.Visitor<Void> {
     private boolean asExpression;
     private List<Supplier<Instruction>> instructions;
-    private Map<Object, Integer> labelToIP = new Hashtable<>();
+    private Map<Object, Integer> labelToIndex = new Hashtable<>();
 
     public Generator(boolean asExpression) {
         this(asExpression, new ArrayList<>(), new Hashtable<>());
     }
 
-    public Generator(boolean asExpression, List<Supplier<Instruction>> instructions, Map<Object, Integer> labelToIP) {
+    public Generator(boolean asExpression, List<Supplier<Instruction>> instructions, Map<Object, Integer> labelToIndex) {
         this.instructions = instructions;
         this.asExpression = asExpression;
-        this.labelToIP = labelToIP;
+        this.labelToIndex = labelToIndex;
     }
 
     private void mark(Object label) {
-        int ip = labelToIP.size();
-        labelToIP.put(label, ip);
+        int index = labelToIndex.size();
+        labelToIndex.put(label, index);
     }
 
     private void emitJump(Object label, Function<Integer, Instruction> instructionFunction) {
         emit(() -> {
-            int ip = labelToIP.get(label);
-            return instructionFunction.apply(ip);
+            int index = labelToIndex.get(label);
+            return instructionFunction.apply(index);
         });
     }
 
@@ -351,12 +351,12 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     private void visitAsExpression(AST expression) {
-        Generator generator = new Generator(true, instructions, labelToIP);
+        Generator generator = new Generator(true, instructions, labelToIndex);
         expression.accept(generator);
     }
 
     private void visitAsStatement(AST expression) {
-        Generator generator = new Generator(false, instructions, labelToIP);
+        Generator generator = new Generator(false, instructions, labelToIndex);
         expression.accept(generator);
     }
 
