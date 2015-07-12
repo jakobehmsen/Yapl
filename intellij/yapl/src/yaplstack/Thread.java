@@ -18,6 +18,10 @@ public class Thread {
                 callFrame.instructions[callFrame.ip].eval(this);
         } catch (Throwable e) {
             e.toString();
+            e.printStackTrace();
+            callFrame.ip--;
+            callFrame.instructions[callFrame.ip].eval(this);
+            callFrame.instructions[callFrame.ip].eval(this);
         }
 
         return this;

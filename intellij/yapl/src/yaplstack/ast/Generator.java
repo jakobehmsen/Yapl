@@ -164,6 +164,33 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
+    public Void visitExtend(AST target) {
+        visitAsExpression(target);
+        emit(Instruction.Factory.extendEnvironment);
+
+        if(!asExpression)
+            emit(Instruction.Factory.pop);
+
+        return null;
+    }
+
+    @Override
+    public Void visitEnv() {
+        if(asExpression)
+            emit(Instruction.Factory.loadEnvironment);
+
+        return null;
+    }
+
+    @Override
+    public Void visitOuterEnv(AST target) {
+        visitAsExpression(target);
+        emit(Instruction.Factory.outerEnvironment);
+
+        return null;
+    }
+
+    @Override
     public Void visitLiteral(Object obj) {
         if(asExpression)
             emit(Instruction.Factory.loadConst(obj));
@@ -306,6 +333,19 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
+    public Void visitOn(AST target, AST code) {
+        emit(Instruction.Factory.loadEnvironment);
+        visitAsExpression(target);
+        emit(Instruction.Factory.storeEnvironment);
+        code.accept(this);
+        if(asExpression)
+            emit(Instruction.Factory.swap);
+        emit(Instruction.Factory.storeEnvironment);
+
+        return null;
+    }
+
+    @Override
     public Void visitLocal(String name, AST value) {
         emit(Instruction.Factory.loadEnvironment);
         visitAsExpression(value);
@@ -319,6 +359,19 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
+    public Void visitStore(AST target, String name, AST value) {
+        visitAsExpression(target);
+        visitAsExpression(value);
+
+        if(asExpression)
+            emit(Instruction.Factory.dupx1);
+
+        emit(Instruction.Factory.store(name));
+
+        return null;
+    }
+
+    @Override
     public Void visitStore(String name, AST value) {
         emit(Instruction.Factory.loadEnvironment);
         visitAsExpression(value);
@@ -327,6 +380,16 @@ public class Generator implements AST.Visitor<Void> {
             emit(Instruction.Factory.dupx1);
 
         emit(Instruction.Factory.store(name));
+
+        return null;
+    }
+
+    @Override
+    public Void visitLoad(AST target, String name) {
+        if(asExpression) {
+            visitAsExpression(target);
+            emit(Instruction.Factory.load(name));
+        }
 
         return null;
     }

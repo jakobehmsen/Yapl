@@ -28,12 +28,18 @@ public interface AST {
         T visitFieldGet(AST target, Field field);
         T visitFieldSet(Field field, AST value);
         T visitFieldSet(AST target, Field field, AST value);
+        T visitOn(AST target, AST code);
         T visitLocal(String name, AST value);
+        T visitStore(AST target, String name, AST value);
         T visitStore(String name, AST value);
+        T visitLoad(AST target, String name);
         T visitLoad(String name);
         T visitApply(AST target, List<AST> asts);
         T visitTest(AST condition, AST ifTrue, AST ifFalse);
         T visitLoop(AST condition, AST body);
+        T visitExtend(AST target);
+        T visitEnv();
+        T visitOuterEnv(AST target);
     }
 
     class Factory {
@@ -59,11 +65,51 @@ public interface AST {
             return local(name, fn(params, code));
         }
 
+        public static AST object(AST body) {
+            return on(extend(env()), block(body, env()));
+        }
+
+        public static AST extend(AST target) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitExtend(target);
+                }
+            };
+        }
+
+        public static AST outerEnv(AST target) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitOuterEnv(target);
+                }
+            };
+        }
+
+        public static AST env() {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitEnv();
+                }
+            };
+        }
+
         public static AST fn(String[] params, AST code) {
             return new AST() {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitFN(Arrays.asList(params), code);
+                }
+            };
+        }
+
+        public static AST on(AST target, AST code) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitOn(target, code);
                 }
             };
         }
@@ -86,11 +132,29 @@ public interface AST {
             };
         }
 
+        public static AST store(AST target, String name, AST value) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitStore(target, name, value);
+                }
+            };
+        }
+
         public static AST load(String name) {
             return new AST() {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitLoad(name);
+                }
+            };
+        }
+
+        public static AST load(AST target, String name) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitLoad(target, name);
                 }
             };
         }
