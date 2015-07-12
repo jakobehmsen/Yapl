@@ -40,6 +40,15 @@ public class Generator implements AST.Visitor<Void> {
         });
     }
 
+    private void emitJumpIfTrue(Object label) {
+        emitJump(label, index -> Instruction.Factory.jumpIfTrue(index));
+    }
+
+    private void emitJump(Object label) {
+        emit(Instruction.Factory.loadConst(true));
+        emitJumpIfTrue(label);
+    }
+
     @Override
     public Void visitProgram(AST code) {
         code.accept(this);
@@ -111,24 +120,15 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitTest(AST condition, AST ifTrue, AST ifFalse) {
-        /*emit(Instruction.Factory.loadConst(toInstructions(ifTrue, g -> { }, g -> g.emit(Instruction.Factory.popCallFrame))));
-        emit(Instruction.Factory.loadConst(toInstructions(ifFalse, g -> {
-        }, g -> g.emit(Instruction.Factory.popCallFrame))));
-        visitAsExpression(condition);
-        emit(Instruction.Factory.pushConditionalCallFrame);*/
-
         visitAsExpression(condition);
 
         Object labelIfTrue = new Object();
         Object labelEnd = new Object();
 
-        emitJump(labelIfTrue, index ->
-            Instruction.Factory.jumpIfTrue(index));
+        emitJumpIfTrue(labelIfTrue);
 
         ifFalse.accept(this);
-        emit(Instruction.Factory.loadConst(true));
-        emitJump(labelEnd, index ->
-            Instruction.Factory.jumpIfTrue(index));
+        emitJump(labelEnd);
 
         mark(labelIfTrue);
         ifTrue.accept(this);
@@ -140,49 +140,22 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitLoop(AST condition, AST body) {
-        /*
-        instructions = {
-            test(
-                condition,
-                {
-                    body
-                    loadCallFrame
-                    callFrameOuter
-                    dup
-                    callFrameInstructions
-                    pushCallFrameFrom
-                }
-                popCallFrame
-            )
-            popCallFrame
-        }
-        loadConst(instructions)
-        pushCallFrame
-        */
+        Object labelStart = new Object();
+        Object labelBody = new Object();
+        Object labelEnd = new Object();
 
-        Generator ifTrueGenerator = new Generator(false);
-        body.accept(ifTrueGenerator);
-        ifTrueGenerator.emit(Instruction.Factory.loadCallFrame);            // [..., test call frame]
-        ifTrueGenerator.emit(Instruction.Factory.outerCallFrame);           // [..., body call frame]
-        ifTrueGenerator.emit(Instruction.Factory.dup);                      // [..., body call frame, body call frame]
-        ifTrueGenerator.emit(Instruction.Factory.outerCallFrame);           // [..., body call frame, loop call frame]
-        ifTrueGenerator.emit(Instruction.Factory.swap);                     // [..., loop call frame, body call frame]
-        ifTrueGenerator.emit(Instruction.Factory.callFrameInstructions);    // [..., loop call frame, body call frame instructions]
-        ifTrueGenerator.emit(Instruction.Factory.pushCallFrameFrom);        // [...]
+        mark(labelStart);
+        visitAsExpression(condition);
 
-        Generator ifFalseGenerator = new Generator(false);
-        ifFalseGenerator.emit(Instruction.Factory.popCallFrame);
+        emitJumpIfTrue(labelBody);
 
-        Generator loopGenerator = new Generator(false);
+        emitJump(labelEnd);
 
-        loopGenerator.emit(Instruction.Factory.loadConst(ifTrueGenerator.generate()));
-        loopGenerator.emit(Instruction.Factory.loadConst(ifFalseGenerator.generate()));
-        loopGenerator.visitAsExpression(condition);
-        loopGenerator.emit(Instruction.Factory.pushConditionalCallFrame);
-        loopGenerator.emit(Instruction.Factory.popCallFrame);
+        mark(labelBody);
+        body.accept(this);
+        emitJump(labelStart);
 
-        emit(Instruction.Factory.loadConst(loopGenerator.generate()));
-        emit(Instruction.Factory.pushCallFrame);
+        mark(labelEnd);
 
         if(asExpression)
             emit(Instruction.Factory.loadConst(null));

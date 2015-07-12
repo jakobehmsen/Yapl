@@ -49,7 +49,7 @@ public class Main {
         ));
         /*AST program = program(block(
             local("x", literal(0)),
-            loop(lti(load("x"), literal(100)),
+            loop(lti(load("x"), literal(10)),
                 store("x", addi(load("x"), literal(1)))
             ),
             load("x")
