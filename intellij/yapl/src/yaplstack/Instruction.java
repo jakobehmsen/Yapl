@@ -94,6 +94,16 @@ public interface Instruction {
                 thread.callFrame = new CallFrame(thread.callFrame, instructionsIfFalse);
         };
 
+        public static Instruction jumpIfTrue(int index) {
+            return thread -> {
+                boolean condition = (boolean)thread.operandFrame.pop();
+                if(condition)
+                    thread.callFrame.setIP(index);
+                else
+                    thread.callFrame.incrementIP();
+            };
+        };
+
         public static Instruction popCallFrame = thread -> {
             thread.callFrame = thread.callFrame.outer;
             thread.callFrame.incrementIP();

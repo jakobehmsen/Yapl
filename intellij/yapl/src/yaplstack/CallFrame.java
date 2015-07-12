@@ -16,8 +16,9 @@ public class CallFrame {
 
     public void incrementIP() {
         ip++;
+    }
 
-        if(ip == 6)
-            new String();
+    public void setIP(int index) {
+        ip = index;
     }
 }
