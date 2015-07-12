@@ -70,28 +70,20 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
-    public Void visitFN(List<String> params, AST code) {
+    public Void visitFN(List<String> params, int variableCount, AST code) {
         if(asExpression) {
             Generator generator = new Generator(true);
 
-            generator.emit(Instruction.Factory.loadEnvironment);
-            generator.emit(Instruction.Factory.extendEnvironment);
-            generator.emit(Instruction.Factory.storeEnvironment);
+            // Forward arguments
+            generator.emit(Instruction.Factory.pushOperandFrame(params.size()));
 
-            for(int i = params.size() - 1; i >= 0; i--) {
-                generator.emit(Instruction.Factory.loadEnvironment);
-                generator.emit(Instruction.Factory.swap);
-                generator.emit(Instruction.Factory.local(params.get(i)));
-            }
-
-            generator.emit(Instruction.Factory.pushOperandFrame(0));
+            // Allocate variables
+            for(int i = 0; i <= variableCount; i++)
+                generator.emit(Instruction.Factory.loadConst(null));
 
             code.accept(generator);
 
             generator.emit(Instruction.Factory.popOperandFrame(1));
-            generator.emit(Instruction.Factory.loadEnvironment);
-            generator.emit(Instruction.Factory.outerEnvironment);
-            generator.emit(Instruction.Factory.storeEnvironment);
             generator.emit(Instruction.Factory.popCallFrame);
 
             Instruction[] instructionArray = generator.generate();
@@ -186,6 +178,13 @@ public class Generator implements AST.Visitor<Void> {
     public Void visitOuterEnv(AST target) {
         visitAsExpression(target);
         emit(Instruction.Factory.outerEnvironment);
+
+        return null;
+    }
+
+    @Override
+    public Void loadVar(int ordinal) {
+        emit(Instruction.Factory.loadVar(ordinal));
 
         return null;
     }

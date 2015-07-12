@@ -12,7 +12,7 @@ public interface AST {
     interface Visitor<T> {
         T visitProgram(AST code);
         T visitBlock(List<AST> code);
-        T visitFN(List<String> params, AST code);
+        T visitFN(List<String> params, int variableCount, AST code);
         T visitLiteral(Object obj);
         T visitAddi(AST lhs, AST rhs);
         T visitSubi(AST lhs, AST rhs);
@@ -40,6 +40,7 @@ public interface AST {
         T visitExtend(AST target);
         T visitEnv();
         T visitOuterEnv(AST target);
+        T loadVar(int ordinal);
     }
 
     class Factory {
@@ -62,7 +63,7 @@ public interface AST {
         }
 
         public static AST defun(String name, String[] params, AST code) {
-            return local(name, fn(params, code));
+            return local(name, fn(params, 0, code));
         }
 
         public static AST object(AST body) {
@@ -96,11 +97,11 @@ public interface AST {
             };
         }
 
-        public static AST fn(String[] params, AST code) {
+        public static AST fn(String[] params, int variableCount, AST code) {
             return new AST() {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
-                    return visitor.visitFN(Arrays.asList(params), code);
+                    return visitor.visitFN(Arrays.asList(params), variableCount, code);
                 }
             };
         }
@@ -137,6 +138,15 @@ public interface AST {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitStore(target, name, value);
+                }
+            };
+        }
+
+        public static AST loadVar(int ordinal) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.loadVar(ordinal);
                 }
             };
         }

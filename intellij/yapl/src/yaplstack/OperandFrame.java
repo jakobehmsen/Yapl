@@ -31,12 +31,21 @@ public class OperandFrame {
     }
 
     public void pushTo(OperandFrame operandFrame, int pushCount) {
+        for(int i = pushCount - 1; i >= 0; i--)
+            operandFrame.push(stack.get(stack.size() - i - 1));
         for(int i = 0; i < pushCount; i++)
-            operandFrame.push(pop());
+            pop();
+
+        /*for(int i = 0; i < pushCount; i++)
+            operandFrame.push(pop());*/
     }
 
     public void swap() {
         Object tmp = stack.pop();
         stack.add(stack.size() - 1, tmp);
+    }
+
+    public Object get(int ordinal) {
+        return stack.get(ordinal);
     }
 }

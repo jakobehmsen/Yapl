@@ -37,6 +37,8 @@ public class Main {
         }
         */
 
+        // push nth element in stack
+
         AST program = program(block(
             local("x", literal(12)),
 
@@ -45,16 +47,18 @@ public class Main {
                 local("y", literal(5)),
                 defun("someFunc", new String[]{}, muli(load("x"), load("y"))),
                 defun("setX", new String[]{"x"}, store(outerEnv(env()), "x", load("x"))),
-                defun("setX2", new String[]{"x'"}, store("x", load("x'")))
+                //defun("setX2", new String[]{"x'"}, store("x", load("x'")))
+                defun("setX2", new String[]{"x"}, store("x", loadVar(0)))
             ))),
 
-            /*defun("strconcat", new String[]{"x", "y"}, invoke(load("x"), String.class.getMethod("concat", String.class), load("y"))),
-            defun("exclamator", new String[]{"x"}, call("strconcat", load("x"), literal("!!!"))),
-            call("exclamator", literal("Hello world")),*/
+            defun("strconcat", new String[]{"x", "y"}, invoke(loadVar(0), String.class.getMethod("concat", String.class), loadVar(1))),
+            defun("exclamator", new String[]{"x"}, call("strconcat", loadVar(0), literal("!!!"))),
+            call("exclamator", literal("Hello world")),
 
-            on(load("myPoint"), call("someFunc")),
-            load("x"),
+            /*on(load("myPoint"), call("someFunc")),
+            load("x"),*/
             //on(load("myPoint"), load("x")),
+
             on(load("myPoint"), call("setX2", literal(77))),
             on(load("myPoint"), load("x"))
 
