@@ -41,6 +41,7 @@ public interface AST {
         T visitEnv();
         T visitOuterEnv(AST target);
         T loadVar(int ordinal);
+        T visitItoc(AST i);
     }
 
     class Factory {
@@ -330,6 +331,15 @@ public interface AST {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitEqi(lhs, rhs);
+                }
+            };
+        }
+
+        public static AST itoc(AST i) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitItoc(i);
                 }
             };
         }

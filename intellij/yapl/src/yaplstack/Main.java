@@ -41,21 +41,24 @@ public class Main {
 
         // push nth element in stack
 
-        String sourceCode = "123";
+        String sourceCode = "1237voiv6vg787g88ogbg8bb";
 
-        /*AST program = program(block(
-            defun("println", new String[]{"str"}, invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), load("str"))),
+        AST program = program(block(
+            defun("println", new String[]{"str"},
+                invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), invoke(load("str"), Object.class.getMethod("toString")))
+            ),
 
             local("inputStream", object(block(
                 local("input", literal(new ByteArrayInputStream(sourceCode.getBytes()))),
                 defun("next", invoke(load("input"), InputStream.class.getMethod("read"))),
+                defun("nextChar", itoc(call("next"))),
                 defun("hasMore", gti(invoke(load("input"), InputStream.class.getMethod("available")), literal(0)))
             ))),
 
             loop(send(load("inputStream"), "hasMore"),
-                call("println", send(load("inputStream"), "next"))
+                call("println", send(load("inputStream"), "nextChar"))
             )
-        ));*/
+        ));
 
         /*AST program = program(block(
             local("myPoint", object(block(
@@ -96,13 +99,13 @@ public class Main {
                 invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), literal("No..."))
             )
         ));*/
-        AST program = program(block(
+        /*AST program = program(block(
             local("x", literal(0)),
             loop(lti(load("x"), literal(10)),
                 store("x", addi(load("x"), literal(1)))
             ),
             load("x")
-        ));
+        ));*/
         Instruction[] instructions = Generator.toInstructions(program);
 
         Thread thread = new Thread(new CallFrame(instructions));

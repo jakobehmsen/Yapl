@@ -224,6 +224,14 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
+    public Void visitItoc(AST i) {
+        visitAsExpression(i);
+        emit(Instruction.Factory.itoc);
+
+        return null;
+    }
+
+    @Override
     public Void visitLiteral(Object obj) {
         if(asExpression)
             emit(Instruction.Factory.loadConst(obj));

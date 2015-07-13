@@ -188,6 +188,8 @@ public interface Instruction {
         public static IncIP gti = binaryReducer((Integer lhs, Integer rhs) -> lhs > rhs);
         public static IncIP eqi = binaryReducer((Integer lhs, Integer rhs) -> lhs == rhs);
 
+        public static IncIP itoc = unaryReducer((Integer i) -> (char)i.intValue());
+
         public static IncIP newInstance(Constructor<?> constructor) {
             return thread -> {
                 int argCount = constructor.getParameterCount();
