@@ -142,15 +142,6 @@ public interface AST {
             };
         }
 
-        public static AST loadVar(int ordinal) {
-            return new AST() {
-                @Override
-                public <T> T accept(Visitor<T> visitor) {
-                    return visitor.loadVar(ordinal);
-                }
-            };
-        }
-
         public static AST load(String name) {
             return new AST() {
                 @Override

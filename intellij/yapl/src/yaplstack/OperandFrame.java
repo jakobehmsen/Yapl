@@ -48,4 +48,8 @@ public class OperandFrame {
     public Object get(int ordinal) {
         return stack.get(ordinal);
     }
+
+    public void set(int ordinal, Object value) {
+        stack.set(ordinal, value);
+    }
 }

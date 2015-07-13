@@ -54,6 +54,13 @@ public interface Instruction {
             };
         }
 
+        public static IncIP storeVar(int ordinal) {
+            return thread -> {
+                Object value = thread.operandFrame.pop();
+                thread.operandFrame.set(ordinal, value);
+            };
+        }
+
         public static IncIP loadVar(int ordinal) {
             return thread -> {
                 Object value = thread.operandFrame.get(ordinal);
