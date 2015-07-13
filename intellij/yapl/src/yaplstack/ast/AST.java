@@ -12,7 +12,7 @@ public interface AST {
     interface Visitor<T> {
         T visitProgram(AST code);
         T visitBlock(List<AST> code);
-        T visitFN(List<String> params, int variableCount, AST code);
+        T visitFN(List<String> params, AST code);
         T visitLiteral(Object obj);
         T visitAddi(AST lhs, AST rhs);
         T visitSubi(AST lhs, AST rhs);
@@ -101,7 +101,7 @@ public interface AST {
             return new AST() {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
-                    return visitor.visitFN(Arrays.asList(params), variableCount, code);
+                    return visitor.visitFN(Arrays.asList(params), code);
                 }
             };
         }

@@ -11,32 +11,47 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 public class Generator implements AST.Visitor<Void> {
-    private boolean asExpression;
-    private List<Supplier<Instruction>> instructions;
-    private Map<Object, Integer> labelToIndex = new Hashtable<>();
-
-    public Generator(boolean asExpression) {
-        this(asExpression, new ArrayList<>(), new Hashtable<>());
+    interface TwoStageGenerator {
+        Runnable generate(List<Instruction> instructions, Map<Object, Integer> labelToIndex);
     }
 
-    public Generator(boolean asExpression, List<Supplier<Instruction>> instructions, Map<Object, Integer> labelToIndex) {
-        this.instructions = instructions;
+    private boolean asExpression;
+    private List<TwoStageGenerator> stagedInstructions = new ArrayList<>();
+
+    private List<String> locals;
+
+    public Generator(boolean asExpression) {
+        this(asExpression, new ArrayList<>(), new ArrayList<>());
+    }
+
+    public Generator(boolean asExpression, List<TwoStageGenerator> stagedInstructions, List<String> locals) {
+        this.stagedInstructions = stagedInstructions;
         this.asExpression = asExpression;
-        this.labelToIndex = labelToIndex;
+        this.locals = locals;
     }
 
     private void mark(Object label) {
-        int index = instructions.size();
-        labelToIndex.put(label, index);
+        emit((instructions, labelToIndex) -> {
+            int index = instructions.size();
+            labelToIndex.put(label, index);
+
+            return () -> { };
+        });
     }
 
     private void emitJump(Object label, Function<Integer, Instruction> instructionFunction) {
-        emit(() -> {
-            int index = labelToIndex.get(label);
-            return instructionFunction.apply(index);
+        emit((instructions, labelToIndex) -> {
+            int jumpIndex = labelToIndex.get(label);
+            int instructionIndex = instructions.size();
+            instructions.add(null);
+
+            return () -> {
+                Instruction instruction = instructionFunction.apply(jumpIndex);
+                instructions.set(instructionIndex, instruction);
+            };
         });
     }
 
@@ -70,9 +85,15 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
-    public Void visitFN(List<String> params, int variableCount, AST code) {
+    public Void visitFN(List<String> params, AST code) {
         if(asExpression) {
+            Generator bodyGenerator = new Generator(true);
+            bodyGenerator.locals.addAll(params);
+            code.accept(bodyGenerator);
+            int variableCount = bodyGenerator.locals.size() - params.size();
+
             Generator generator = new Generator(true);
+            generator.locals.addAll(params);
 
             // Forward arguments
             generator.emit(Instruction.Factory.pushOperandFrame(params.size()));
@@ -81,7 +102,7 @@ public class Generator implements AST.Visitor<Void> {
             for(int i = 0; i <= variableCount; i++)
                 generator.emit(Instruction.Factory.loadConst(null));
 
-            code.accept(generator);
+            generator.emit(bodyGenerator);
 
             generator.emit(Instruction.Factory.popOperandFrame(1));
             generator.emit(Instruction.Factory.popCallFrame);
@@ -95,7 +116,14 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     private Instruction[] generate() {
-        return instructions.stream().map(x -> x.get()).toArray(s -> new Instruction[s]);
+        ArrayList<Instruction> instructions = new ArrayList<>();
+        Hashtable<Object, Integer> labelToIndex = new Hashtable<>();
+
+        stagedInstructions.stream()
+            .map(x -> x.generate(instructions, labelToIndex))
+            .forEach(x -> x.run());
+
+        return instructions.stream().toArray(s -> new Instruction[s]);
     }
 
     @Override
@@ -396,29 +424,46 @@ public class Generator implements AST.Visitor<Void> {
     @Override
     public Void visitLoad(String name) {
         if(asExpression) {
-            emit(Instruction.Factory.loadEnvironment);
-            emit(Instruction.Factory.load(name));
+            int localOrdinal = locals.indexOf(name);
+
+            if(localOrdinal != -1) {
+                emit(Instruction.Factory.loadVar(localOrdinal));
+            } else {
+                emit(Instruction.Factory.loadEnvironment);
+                emit(Instruction.Factory.load(name));
+            }
         }
 
         return null;
     }
 
     private void visitAsExpression(AST expression) {
-        Generator generator = new Generator(true, instructions, labelToIndex);
+        Generator generator = new Generator(true, stagedInstructions, locals);
         expression.accept(generator);
     }
 
     private void visitAsStatement(AST expression) {
-        Generator generator = new Generator(false, instructions, labelToIndex);
+        Generator generator = new Generator(false, stagedInstructions, locals);
         expression.accept(generator);
     }
 
     private void emit(Instruction instruction) {
-        emit(() -> instruction);
+        emit((instructions, indexToLabel) -> {
+            instructions.add(instruction);
+            return () -> {
+            };
+        });
     }
 
-    private void emit(Supplier<Instruction> instruction) {
-        instructions.add(instruction);
+    private void emit(Generator generator) {
+        emit(((instructions, labelToIndex) -> {
+            Stream<Runnable> postProcessors = generator.stagedInstructions.stream().map(x -> x.generate(instructions, labelToIndex));
+            return () -> postProcessors.forEach(x -> x.run());
+        }));
+    }
+
+    private void emit(TwoStageGenerator generator) {
+        stagedInstructions.add(generator);
     }
 
     public static Instruction[] toInstructions(AST code) {
