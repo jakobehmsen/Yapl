@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Generator implements AST.Visitor<Void> {
@@ -47,11 +48,11 @@ public class Generator implements AST.Visitor<Void> {
 
     private void emitJump(Object label, Function<Integer, Instruction> instructionFunction) {
         emit((instructions, labelToIndex) -> {
-            int jumpIndex = labelToIndex.get(label);
             int instructionIndex = instructions.size();
             instructions.add(null);
 
             return () -> {
+                int jumpIndex = labelToIndex.get(label);
                 Instruction instruction = instructionFunction.apply(jumpIndex);
                 instructions.set(instructionIndex, instruction);
             };
@@ -125,6 +126,7 @@ public class Generator implements AST.Visitor<Void> {
 
         stagedInstructions.stream()
             .map(x -> x.generate(instructions, labelToIndex))
+            .collect(Collectors.toList())
             .forEach(x -> x.run());
 
         return instructions.stream().toArray(s -> new Instruction[s]);
@@ -487,7 +489,9 @@ public class Generator implements AST.Visitor<Void> {
 
     private void emit(Generator generator) {
         emit(((instructions, labelToIndex) -> {
-            Stream<Runnable> postProcessors = generator.stagedInstructions.stream().map(x -> x.generate(instructions, labelToIndex));
+            List<Runnable> postProcessors = generator.stagedInstructions.stream()
+                .map(x -> x.generate(instructions, labelToIndex))
+                .collect(Collectors.toList());
             return () -> postProcessors.forEach(x -> x.run());
         }));
     }

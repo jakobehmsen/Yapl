@@ -3,6 +3,8 @@ package yaplstack;
 import yaplstack.ast.AST;
 import yaplstack.ast.Generator;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.io.PrintStream;
 
 import static yaplstack.ast.AST.Factory.*;
@@ -39,13 +41,28 @@ public class Main {
 
         // push nth element in stack
 
-        AST program = program(block(
+        String sourceCode = "123";
+
+        /*AST program = program(block(
+            defun("println", new String[]{"str"}, invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), load("str"))),
+
+            local("inputStream", object(block(
+                local("input", literal(new ByteArrayInputStream(sourceCode.getBytes()))),
+                defun("next", invoke(load("input"), InputStream.class.getMethod("read"))),
+                defun("hasMore", gti(invoke(load("input"), InputStream.class.getMethod("available")), literal(0)))
+            ))),
+
+            loop(send(load("inputStream"), "hasMore"),
+                call("println", send(load("inputStream"), "next"))
+            )
+        ));*/
+
+        /*AST program = program(block(
             local("myPoint", object(block(
                 local("x", literal(3)),
                 local("y", literal(5)),
                 defun("someFunc", new String[]{}, muli(load("x"), load("y"))),
                 defun("setX", new String[]{"x"}, store(outerEnv(env()), "x", load("x"))),
-                //defun("setX2", new String[]{"x'"}, store("x", load("x'")))
                 defun("setX2", new String[]{"x"}, block(
                     local("tmpX", addi(load("x"), literal(1))),
                     store(env(), "x", load("tmpX"))
@@ -56,15 +73,9 @@ public class Main {
             defun("exclamator", new String[]{"x"}, call("strconcat", load("x"), literal("!!!"))),
             call("exclamator", literal("Hello world")),
 
-            /*on(load("myPoint"), call("someFunc")),
-            load("x"),*/
-            //on(load("myPoint"), load("x")),
-
             on(load("myPoint"), call("setX2", literal(77))),
             on(load("myPoint"), load("x"))
-
-            //load(load("myPoint"), "x")
-        ));
+        ));*/
 
 
 
@@ -85,13 +96,13 @@ public class Main {
                 invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), literal("No..."))
             )
         ));*/
-        /*AST program = program(block(
+        AST program = program(block(
             local("x", literal(0)),
             loop(lti(load("x"), literal(10)),
                 store("x", addi(load("x"), literal(1)))
             ),
             load("x")
-        ));*/
+        ));
         Instruction[] instructions = Generator.toInstructions(program);
 
         Thread thread = new Thread(new CallFrame(instructions));

@@ -62,12 +62,20 @@ public interface AST {
             };
         }
 
+        public static AST defun(String name, AST code) {
+            return defun(name, new String[0], code);
+        }
+
         public static AST defun(String name, String[] params, AST code) {
-            return local(name, fn(params, 0, code));
+            return local(name, fn(params, code));
         }
 
         public static AST object(AST body) {
             return on(extend(env()), block(body, env()));
+        }
+
+        public static AST send(AST target, String name, AST... arguments) {
+            return on(target, call(name, arguments));
         }
 
         public static AST extend(AST target) {
@@ -97,7 +105,7 @@ public interface AST {
             };
         }
 
-        public static AST fn(String[] params, int variableCount, AST code) {
+        public static AST fn(String[] params, AST code) {
             return new AST() {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
