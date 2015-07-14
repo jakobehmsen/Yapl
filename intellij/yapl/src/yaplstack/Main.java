@@ -41,7 +41,101 @@ public class Main {
 
         // push nth element in stack
 
-        String sourceCode = "1237voiv6vg787g88ogbg8bb";
+        String sourceCode = "( 1 ) 34";
+
+        /*
+
+        {
+            var currentChar = null;
+            peek = function() {
+                return currentChar;
+            }
+            consume = function() {
+                if(inputStream.hasMore())
+                    currentChar = inputStream.nextChar();
+                else
+                    currentChar = '\0';
+            }
+            nextToken = function() {
+                ignore();
+
+                if(Character.isDigit(peek())) {
+                    StringBuilder digits = new StringBuilder();
+                    digits.append(peek());
+                    consume();
+
+                    while(Character.isDigit(peek())) {
+                        StringBuilder digits = new StringBuilder();
+                        digits.append(peek());
+                        consume();
+
+                        return {
+                            type = "Integer";
+                            value = Integer.parseInt(digits.toString());
+                        };
+                    }
+                } else if(peek() == '(') {
+                    return {
+                        type = "OpenPar";
+                    };
+                } else if(peek() == ')') {
+                    return {
+                        type = "ClosePar";
+                    };
+                }
+
+                return null;
+            }
+        }
+
+        or:
+
+        tokens = function(inputStream) {
+            var currentChar = null;
+            peek = function() {
+                return currentChar;
+            }
+            consume = function() {
+                if(inputStream.hasMore())
+                    currentChar = inputStream.nextChar();
+                else
+                    currentChar = '\0';
+            }
+            ignore = ...
+
+            ignore();
+
+            while(inputStream.hasMore()) {
+                if(Character.isDigit(peek())) {
+                    StringBuilder digits = new StringBuilder();
+                    digits.append(peek());
+                    consume();
+
+                    while(Character.isDigit(peek())) {
+                        StringBuilder digits = new StringBuilder();
+                        digits.append(peek());
+                        consume();
+
+                        return {
+                            type = "Integer";
+                            value = Integer.parseInt(digits.toString());
+                        };
+                    }
+                } else if(peek() == '(') {
+                    yield {
+                        type = "OpenPar";
+                    };
+                } else if(peek() == ')') {
+                    return {
+                        type = "ClosePar";
+                    };
+                }
+            }
+        }
+
+        if()
+
+        */
 
         AST program = program(block(
             defun("println", new String[]{"str"},
@@ -53,6 +147,11 @@ public class Main {
                 defun("next", invoke(load("input"), InputStream.class.getMethod("read"))),
                 defun("nextChar", itoc(call("next"))),
                 defun("hasMore", gti(invoke(load("input"), InputStream.class.getMethod("available")), literal(0)))
+            ))),
+
+            local("scanner", object(block(
+                defun("nextToken", invoke(load("inputStream"), InputStream.class.getMethod("read"))),
+                defun("hasMoreTokens", gti(invoke(load("input"), InputStream.class.getMethod("available")), literal(0)))
             ))),
 
             loop(send(load("inputStream"), "hasMore"),

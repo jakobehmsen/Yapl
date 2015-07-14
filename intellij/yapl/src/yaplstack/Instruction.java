@@ -75,10 +75,10 @@ public interface Instruction {
             thread.operandFrame = (OperandFrame)thread.operandFrame.pop();
 
         public static IncIP loadEnvironment = thread ->
-            thread.operandFrame.push(thread.environment);
+            thread.operandFrame.push(thread.callFrame.environment);
 
         public static IncIP storeEnvironment = thread ->
-            thread.environment = (Environment)thread.operandFrame.pop();
+            thread.callFrame.environment = (Environment)thread.operandFrame.pop();
 
         public static IncIP loadCallFrame = thread ->
             thread.operandFrame.push(thread.callFrame);
@@ -88,13 +88,13 @@ public interface Instruction {
 
         public static Instruction pushCallFrame = thread -> {
             Instruction[] instructions = (Instruction[])thread.operandFrame.pop();
-            thread.callFrame = new CallFrame(thread.callFrame, instructions);
+            thread.callFrame = new CallFrame(thread.callFrame.environment, thread.callFrame, instructions);
         };
 
         public static Instruction pushCallFrameFrom = thread -> {
             Instruction[] instructions = (Instruction[])thread.operandFrame.pop();
             CallFrame callFrame = (CallFrame)thread.operandFrame.pop();
-            thread.callFrame = new CallFrame(callFrame, instructions);
+            thread.callFrame = new CallFrame(thread.callFrame.environment, callFrame, instructions);
         };
 
         public static Instruction pushConditionalCallFrame = thread -> {
@@ -103,9 +103,9 @@ public interface Instruction {
             Instruction[] instructionsIfTrue = (Instruction[])thread.operandFrame.pop();
 
             if(condition)
-                thread.callFrame = new CallFrame(thread.callFrame, instructionsIfTrue);
+                thread.callFrame = new CallFrame(thread.callFrame.environment, thread.callFrame, instructionsIfTrue);
             else
-                thread.callFrame = new CallFrame(thread.callFrame, instructionsIfFalse);
+                thread.callFrame = new CallFrame(thread.callFrame.environment, thread.callFrame, instructionsIfFalse);
         };
 
         public static Instruction jumpIfTrue(int index) {
@@ -188,7 +188,7 @@ public interface Instruction {
         public static IncIP gti = binaryReducer((Integer lhs, Integer rhs) -> lhs > rhs);
         public static IncIP eqi = binaryReducer((Integer lhs, Integer rhs) -> lhs == rhs);
 
-        public static IncIP itoc = unaryReducer((Integer i) -> (char)i.intValue());
+        public static IncIP itoc = unaryReducer((Integer i) -> (char) i.intValue());
 
         public static IncIP newInstance(Constructor<?> constructor) {
             return thread -> {
