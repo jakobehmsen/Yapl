@@ -35,9 +35,6 @@ public class OperandFrame {
             operandFrame.push(stack.get(stack.size() - i - 1));
         for(int i = 0; i < pushCount; i++)
             pop();
-
-        /*for(int i = 0; i < pushCount; i++)
-            operandFrame.push(pop());*/
     }
 
     public void swap() {

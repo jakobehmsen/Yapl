@@ -280,7 +280,7 @@ public class Main {
             visitApply,
             finish
         }));*/
-        Object result = thread.evalAll().operandFrame.pop();
+        Object result = thread.evalAll().callFrame.pop();
 
         System.out.println(result);
     }

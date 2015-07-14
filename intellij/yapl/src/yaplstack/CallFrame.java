@@ -1,10 +1,13 @@
 package yaplstack;
 
+import java.util.Stack;
+
 public class CallFrame {
-    public final CallFrame outer;
+    public CallFrame outer;
     public Environment environment;
     public final Instruction[] instructions;
     public int ip;
+    public Stack<Object> stack = new Stack<>();
 
     public CallFrame(Instruction[] instructions) {
         this(new Environment(), null, instructions);
@@ -22,5 +25,41 @@ public class CallFrame {
 
     public void setIP(int index) {
         ip = index;
+    }
+
+    public void push(Object obj) {
+        stack.push(obj);
+    }
+
+    public Object pop() {
+        return stack.pop();
+    }
+
+    public void dup() {
+        stack.push(stack.peek());
+    }
+
+    public void dupx1() {
+        stack.add(stack.size() - 2, stack.peek());
+    }
+
+    public void pushTo(CallFrame callFrame, int pushCount) {
+        for(int i = pushCount - 1; i >= 0; i--)
+            callFrame.stack.push(stack.get(stack.size() - i - 1));
+        for(int i = 0; i < pushCount; i++)
+            pop();
+    }
+
+    public void swap() {
+        Object tmp = stack.pop();
+        stack.add(stack.size() - 1, tmp);
+    }
+
+    public Object get(int ordinal) {
+        return stack.get(ordinal);
+    }
+
+    public void set(int ordinal, Object value) {
+        stack.set(ordinal, value);
     }
 }

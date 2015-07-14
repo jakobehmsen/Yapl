@@ -20,87 +20,107 @@ public interface Instruction {
 
 
         public static IncIP loadConst(Object obj) {
-            return thread -> thread.operandFrame.push(obj);
+            return thread -> thread.callFrame.push(obj);
         }
 
-        public static IncIP dup = thread -> thread.operandFrame.dup();
-        public static IncIP dupx1 = thread -> thread.operandFrame.dupx1();
-        public static IncIP pop = thread -> thread.operandFrame.pop();
-        public static IncIP swap = thread -> thread.operandFrame.swap();
+        public static IncIP dup = thread -> thread.callFrame.dup();
+        public static IncIP dupx1 = thread -> thread.callFrame.dupx1();
+        public static IncIP pop = thread -> thread.callFrame.pop();
+        public static IncIP swap = thread -> thread.callFrame.swap();
 
         public static Instruction finish = thread -> thread.setFinished();
 
         public static IncIP local(String name) {
             return thread -> {
-                Object value = thread.operandFrame.pop();
-                Environment environment = (Environment)thread.operandFrame.pop();
+                Object value = thread.callFrame.pop();
+                Environment environment = (Environment)thread.callFrame.pop();
                 environment.local(name, value);
             };
         }
 
         public static IncIP store(String name) {
             return thread -> {
-                Object value = thread.operandFrame.pop();
-                Environment environment = (Environment)thread.operandFrame.pop();
+                Object value = thread.callFrame.pop();
+                Environment environment = (Environment)thread.callFrame.pop();
                 environment.store(name, value);
             };
         }
 
         public static IncIP load(String name) {
             return thread -> {
-                Environment environment = (Environment)thread.operandFrame.pop();
+                Environment environment = (Environment)thread.callFrame.pop();
                 Object value = environment.load(name);
-                thread.operandFrame.push(value);
+                thread.callFrame.push(value);
             };
         }
 
         public static IncIP storeVar(int ordinal) {
             return thread -> {
-                Object value = thread.operandFrame.pop();
-                thread.operandFrame.set(ordinal, value);
+                Object value = thread.callFrame.pop();
+                thread.callFrame.set(ordinal, value);
             };
         }
 
         public static IncIP loadVar(int ordinal) {
             return thread -> {
-                Object value = thread.operandFrame.get(ordinal);
-                thread.operandFrame.push(value);
+                Object value = thread.callFrame.get(ordinal);
+                thread.callFrame.push(value);
             };
         }
 
-        public static IncIP loadOperandFrame = thread ->
-            thread.operandFrame.push(thread.operandFrame);
+        /*public static IncIP loadOperandFrame = thread ->
+            thread.callFrame.push(thread.callFrame);
 
         public static IncIP storeOperandFrame = thread ->
-            thread.operandFrame = (OperandFrame)thread.operandFrame.pop();
+            thread.callFrame = (OperandFrame)thread.callFrame.pop();*/
 
         public static IncIP loadEnvironment = thread ->
-            thread.operandFrame.push(thread.callFrame.environment);
+            thread.callFrame.push(thread.callFrame.environment);
 
         public static IncIP storeEnvironment = thread ->
-            thread.callFrame.environment = (Environment)thread.operandFrame.pop();
+            thread.callFrame.environment = (Environment)thread.callFrame.pop();
 
         public static IncIP loadCallFrame = thread ->
-            thread.operandFrame.push(thread.callFrame);
+            thread.callFrame.push(thread.callFrame);
 
         public static IncIP storeCallFrame = thread ->
-            thread.callFrame = (CallFrame)thread.operandFrame.pop();
+            thread.callFrame = (CallFrame)thread.callFrame.pop();
+        public static IncIP loadCurrentContinuation = thread ->
+            thread.callFrame.push(thread.callFrame);
+
+
+        public static Instruction resume(int pushCount) {
+            return thread -> {
+                CallFrame target = (CallFrame)thread.callFrame.pop();
+                thread.callFrame.pushTo(target, pushCount);
+                target.incrementIP();
+                thread.callFrame = target;
+            };
+        }
 
         public static Instruction pushCallFrame = thread -> {
-            Instruction[] instructions = (Instruction[])thread.operandFrame.pop();
+            Instruction[] instructions = (Instruction[])thread.callFrame.pop();
             thread.callFrame = new CallFrame(thread.callFrame.environment, thread.callFrame, instructions);
         };
 
+        public static Instruction pushCallFrame(int pushCount) {
+            return thread -> {
+                Instruction[] instructions = (Instruction[])thread.callFrame.pop();
+                thread.callFrame = new CallFrame(thread.callFrame.environment, thread.callFrame, instructions);
+                thread.callFrame.outer.pushTo(thread.callFrame, pushCount);
+            };
+        }
+
         public static Instruction pushCallFrameFrom = thread -> {
-            Instruction[] instructions = (Instruction[])thread.operandFrame.pop();
-            CallFrame callFrame = (CallFrame)thread.operandFrame.pop();
+            Instruction[] instructions = (Instruction[])thread.callFrame.pop();
+            CallFrame callFrame = (CallFrame)thread.callFrame.pop();
             thread.callFrame = new CallFrame(thread.callFrame.environment, callFrame, instructions);
         };
 
         public static Instruction pushConditionalCallFrame = thread -> {
-            boolean condition = (boolean)thread.operandFrame.pop();;
-            Instruction[] instructionsIfFalse = (Instruction[])thread.operandFrame.pop();
-            Instruction[] instructionsIfTrue = (Instruction[])thread.operandFrame.pop();
+            boolean condition = (boolean)thread.callFrame.pop();;
+            Instruction[] instructionsIfFalse = (Instruction[])thread.callFrame.pop();
+            Instruction[] instructionsIfTrue = (Instruction[])thread.callFrame.pop();
 
             if(condition)
                 thread.callFrame = new CallFrame(thread.callFrame.environment, thread.callFrame, instructionsIfTrue);
@@ -110,7 +130,7 @@ public interface Instruction {
 
         public static Instruction jumpIfTrue(int index) {
             return thread -> {
-                boolean condition = (boolean)thread.operandFrame.pop();
+                boolean condition = (boolean)thread.callFrame.pop();
                 if(condition)
                     thread.callFrame.setIP(index);
                 else
@@ -123,56 +143,65 @@ public interface Instruction {
             thread.callFrame.incrementIP();
         };
 
-        public static IncIP pushOperandFrame(int pushCount) {
+        public static Instruction popCallFrame(int pushCount) {
             return thread -> {
-                OperandFrame operandFrame = new OperandFrame(thread.operandFrame);
-                thread.operandFrame.pushTo(operandFrame, pushCount);
-                thread.operandFrame = operandFrame;
+                thread.callFrame.outer.pushTo(thread.callFrame, pushCount);
+                thread.callFrame = thread.callFrame.outer;
+                thread.callFrame.incrementIP();
+            };
+        }
+
+
+        /*public static IncIP pushOperandFrame(int pushCount) {
+            return thread -> {
+                OperandFrame operandFrame = new OperandFrame(thread.callFrame);
+                thread.callFrame.pushTo(operandFrame, pushCount);
+                thread.callFrame = operandFrame;
             };
         }
 
         public static IncIP popOperandFrame(int popCount) {
             return thread -> {
-                OperandFrame operandFrame = thread.operandFrame.outer;
-                thread.operandFrame.pushTo(operandFrame, popCount);
-                thread.operandFrame = operandFrame;
+                OperandFrame operandFrame = thread.callFrame.outer;
+                thread.callFrame.pushTo(operandFrame, popCount);
+                thread.callFrame = operandFrame;
             };
-        }
+        }*/
 
         public static IncIP extendEnvironment = thread -> {
-            Environment environment = (Environment)thread.operandFrame.pop();
-            thread.operandFrame.push(new Environment(environment));
+            Environment environment = (Environment)thread.callFrame.pop();
+            thread.callFrame.push(new Environment(environment));
         };
 
         public static IncIP outerEnvironment = thread -> {
-            Environment environment = (Environment)thread.operandFrame.pop();
-            thread.operandFrame.push(environment.outer);
+            Environment environment = (Environment)thread.callFrame.pop();
+            thread.callFrame.push(environment.outer);
         };
 
         public static IncIP outerCallFrame = thread -> {
-            CallFrame callFrame = (CallFrame)thread.operandFrame.pop();
-            thread.operandFrame.push(callFrame.outer);
+            CallFrame callFrame = (CallFrame)thread.callFrame.pop();
+            thread.callFrame.push(callFrame.outer);
         };
 
         public static IncIP callFrameInstructions = thread -> {
-            CallFrame callFrame = (CallFrame)thread.operandFrame.pop();
-            thread.operandFrame.push(callFrame.instructions);
+            CallFrame callFrame = (CallFrame)thread.callFrame.pop();
+            thread.callFrame.push(callFrame.instructions);
         };
 
         private static <T, R> IncIP unaryReducer(Function<T, R> reducer) {
             return thread -> {
-                T operand = (T)thread.operandFrame.pop();
+                T operand = (T)thread.callFrame.pop();
                 R res = reducer.apply(operand);
-                thread.operandFrame.push(res);
+                thread.callFrame.push(res);
             };
         }
 
         private static <T, R, S> IncIP binaryReducer(BiFunction<T, R, S> reducer) {
             return thread -> {
-                R operand2 = (R)thread.operandFrame.pop();
-                T operand1 = (T)thread.operandFrame.pop();
+                R operand2 = (R)thread.callFrame.pop();
+                T operand1 = (T)thread.callFrame.pop();
                 S res = reducer.apply(operand1, operand2);
-                thread.operandFrame.push(res);
+                thread.callFrame.push(res);
             };
         }
 
@@ -195,11 +224,11 @@ public interface Instruction {
                 int argCount = constructor.getParameterCount();
                 Object[] args = new Object[argCount];
                 for(int i = argCount - 1; i >= 0; i--)
-                    args[i] = thread.operandFrame.pop();
+                    args[i] = thread.callFrame.pop();
                 Object res = null;
                 try {
                     res = constructor.newInstance(args);
-                    thread.operandFrame.push(res);
+                    thread.callFrame.push(res);
                 } catch (InstantiationException e) {
                     e.printStackTrace();
                 } catch (IllegalAccessException e) {
@@ -219,12 +248,12 @@ public interface Instruction {
                 int argCount = method.getParameterCount();
                 Object[] args = new Object[argCount];
                 for(int i = argCount - 1; i >= 0; i--)
-                    args[i] = thread.operandFrame.pop();
-                Object obj = instance ? thread.operandFrame.pop() : null;
+                    args[i] = thread.callFrame.pop();
+                Object obj = instance ? thread.callFrame.pop() : null;
                 Object res = null;
                 try {
                     res = method.invoke(obj, args);
-                    thread.operandFrame.push(res);
+                    thread.callFrame.push(res);
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
                 } catch (InvocationTargetException e) {
@@ -239,11 +268,11 @@ public interface Instruction {
             boolean instance = !Modifier.isStatic(field.getModifiers());
 
             return thread -> {
-                Object obj = instance ? thread.operandFrame.pop() : null;
+                Object obj = instance ? thread.callFrame.pop() : null;
                 Object res = null;
                 try {
                     res = field.get(obj);
-                    thread.operandFrame.push(res);
+                    thread.callFrame.push(res);
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
                 }
@@ -256,8 +285,8 @@ public interface Instruction {
             boolean instance = !Modifier.isStatic(field.getModifiers());
 
             return thread -> {
-                Object value = thread.operandFrame.pop();
-                Object obj = instance ? thread.operandFrame.pop() : null;
+                Object value = thread.callFrame.pop();
+                Object obj = instance ? thread.callFrame.pop() : null;
                 try {
                     field.set(obj, value);
                 } catch (IllegalAccessException e) {

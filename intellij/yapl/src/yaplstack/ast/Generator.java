@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Generator implements AST.Visitor<Void> {
     interface TwoStageGenerator {
@@ -100,8 +99,8 @@ public class Generator implements AST.Visitor<Void> {
             Generator generator = new Generator(true);
             generator.locals.addAll(params);
 
-            // Forward arguments
-            generator.emit(Instruction.Factory.pushOperandFrame(params.size()));
+            /*// Forward arguments
+            generator.emit(Instruction.Factory.pushOperandFrame(params.size()));*/
 
             // Allocate variables
             for(int i = 0; i <= variableCount; i++)
@@ -109,8 +108,8 @@ public class Generator implements AST.Visitor<Void> {
 
             generator.emit(bodyGenerator);
 
-            generator.emit(Instruction.Factory.popOperandFrame(1));
-            generator.emit(Instruction.Factory.popCallFrame);
+            //generator.emit(Instruction.Factory.popOperandFrame(1));
+            generator.emit(Instruction.Factory.popCallFrame(1));
 
             Instruction[] instructionArray = generator.generate();
 
@@ -133,10 +132,11 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
-    public Void visitApply(AST target, List<AST> asts) {
-        asts.forEach(x -> visitAsExpression(x));
+    public Void visitApply(AST target, List<AST> args) {
+        args.forEach(x -> visitAsExpression(x));
         visitAsExpression(target);
-        emit(Instruction.Factory.pushCallFrame);
+        // Forward arguments
+        emit(Instruction.Factory.pushCallFrame(args.size()));
 
         if(!asExpression)
             emit(Instruction.Factory.pop);
@@ -228,6 +228,16 @@ public class Generator implements AST.Visitor<Void> {
         visitAsExpression(i);
         emit(Instruction.Factory.itoc);
 
+        return null;
+    }
+
+    @Override
+    public Void visitApplyCC(AST target) {
+        return null;
+    }
+
+    @Override
+    public Void visitResume(AST target, List<AST> args) {
         return null;
     }
 
