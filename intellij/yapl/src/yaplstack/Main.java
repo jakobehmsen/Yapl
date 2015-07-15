@@ -142,6 +142,8 @@ public class Main {
                 invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), invoke(load("str"), Object.class.getMethod("toString")))
             ),
 
+            call("println", literal("Hello World")),
+
             local("inputStream", object(block(
                 local("input", literal(new ByteArrayInputStream(sourceCode.getBytes()))),
                 defun("next", invoke(load("input"), InputStream.class.getMethod("read"))),

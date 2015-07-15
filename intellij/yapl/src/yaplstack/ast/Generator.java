@@ -99,16 +99,11 @@ public class Generator implements AST.Visitor<Void> {
             Generator generator = new Generator(true);
             generator.locals.addAll(params);
 
-            /*// Forward arguments
-            generator.emit(Instruction.Factory.pushOperandFrame(params.size()));*/
-
             // Allocate variables
-            for(int i = 0; i <= variableCount; i++)
+            for(int i = 0; i < variableCount; i++)
                 generator.emit(Instruction.Factory.loadConst(null));
 
             generator.emit(bodyGenerator);
-
-            //generator.emit(Instruction.Factory.popOperandFrame(1));
             generator.emit(Instruction.Factory.popCallFrame(1));
 
             Instruction[] instructionArray = generator.generate();
@@ -339,6 +334,9 @@ public class Generator implements AST.Visitor<Void> {
         args.forEach(x -> visitAsExpression(x));
         emit(Instruction.Factory.invoke(method));
 
+        if(!asExpression)
+            emit(Instruction.Factory.pop);
+
         return null;
     }
 
@@ -348,12 +346,16 @@ public class Generator implements AST.Visitor<Void> {
         args.forEach(x -> visitAsExpression(x));
         emit(Instruction.Factory.invoke(method));
 
+        if(!asExpression)
+            emit(Instruction.Factory.pop);
+
         return null;
     }
 
     @Override
     public Void visitFieldGet(Field field) {
-        emit(Instruction.Factory.fieldGet(field));
+        if(asExpression)
+            emit(Instruction.Factory.fieldGet(field));
 
         return null;
     }
@@ -363,12 +365,17 @@ public class Generator implements AST.Visitor<Void> {
         visitAsExpression(target);
         emit(Instruction.Factory.fieldGet(field));
 
+        if(!asExpression)
+            emit(Instruction.Factory.pop);
+
         return null;
     }
 
     @Override
     public Void visitFieldSet(Field field, AST value) {
         visitAsExpression(value);
+        if(asExpression)
+            emit(Instruction.Factory.dup);
         emit(Instruction.Factory.fieldSet(field));
 
         return null;
@@ -378,6 +385,10 @@ public class Generator implements AST.Visitor<Void> {
     public Void visitFieldSet(AST target, Field field, AST value) {
         visitAsExpression(target);
         visitAsExpression(value);
+
+        if(asExpression)
+            emit(Instruction.Factory.dupx1);
+
         emit(Instruction.Factory.fieldSet(field));
 
         return null;
