@@ -40,11 +40,8 @@ public interface AST {
         T visitExtend(AST target);
         T visitEnv();
         T visitOuterEnv(AST target);
-        T loadVar(int ordinal);
         T visitItoc(AST i);
-
         T visitApplyCC(AST target);
-
         T visitResume(AST target, List<AST> args);
     }
 
@@ -186,44 +183,7 @@ public interface AST {
             return apply(load(name), arguments);
         }
 
-        /*
-        {
-            OuterFrame = here
-            OuterStack = stack
-            CallFrame = createCallFrame(<instructions>);
-            Stack = createStack
-        }
-
-        createFrameInfo(instructions) {
-            {
-                OuterFrame = here
-                OuterStack = stack
-                CallFrame = createCallFrame(<instructions>);
-                Stack = createStack
-            }
-        }
-
-        resume(frameInfo, args) {
-            pushTo(eval(args), frameInfo.Stack)
-            frameInfo.OuterFrame = here
-            frameInfo.OuterStack = stack
-            storeVar(frameInfo.Stack, 0, frameInfo)
-            local(frameInfo.OuterFrame.Environment, "caller", frameInfo)
-            push(frameInfo.CallFrame, frameInfo.Stack)
-            setStack(frameInfo.Stack)
-            setCallFrame
-        }
-
-        return(frameInfo, value) {
-            push(eval(value), frameInfo.Stack)
-            setStack(frameInfo.OuterStack)
-            callFrameIncIP(frameInfo.OuterFrame)
-            setCallFrame(frameInfo.OuterFrame);
-        }
-        */
-
         public static AST resume(AST target, AST... arguments) {
-            //return resume(target, arguments);
             return new AST() {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
@@ -233,7 +193,6 @@ public interface AST {
         }
 
         public static AST applycc(AST target) {
-            //return newCallFrame(target);
             return new AST() {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {

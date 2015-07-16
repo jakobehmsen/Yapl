@@ -212,13 +212,6 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
-    public Void loadVar(int ordinal) {
-        emit(Instruction.Factory.loadVar(ordinal));
-
-        return null;
-    }
-
-    @Override
     public Void visitItoc(AST i) {
         visitAsExpression(i);
         emit(Instruction.Factory.itoc);
@@ -402,7 +395,6 @@ public class Generator implements AST.Visitor<Void> {
 
         visitAsNonFunction(code);
 
-        //code.accept(this);
         if(asExpression)
             emit(Instruction.Factory.swap);
         emit(Instruction.Factory.storeEnvironment);

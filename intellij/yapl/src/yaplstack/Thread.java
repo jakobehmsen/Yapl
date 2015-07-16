@@ -2,12 +2,10 @@ package yaplstack;
 
 public class Thread {
     public CallFrame callFrame;
-    //public OperandFrame operandFrame;
     private boolean finished;
 
     public Thread(CallFrame callFrame) {
         this.callFrame = callFrame;
-        //operandFrame = new OperandFrame();
     }
 
     public Thread evalAll() {

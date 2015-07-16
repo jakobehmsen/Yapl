@@ -68,12 +68,6 @@ public interface Instruction {
             };
         }
 
-        /*public static IncIP loadOperandFrame = thread ->
-            thread.callFrame.push(thread.callFrame);
-
-        public static IncIP storeOperandFrame = thread ->
-            thread.callFrame = (OperandFrame)thread.callFrame.pop();*/
-
         public static IncIP loadEnvironment = thread ->
             thread.callFrame.push(thread.callFrame.environment);
 
@@ -150,23 +144,6 @@ public interface Instruction {
                 thread.callFrame.incrementIP();
             };
         }
-
-
-        /*public static IncIP pushOperandFrame(int pushCount) {
-            return thread -> {
-                OperandFrame operandFrame = new OperandFrame(thread.callFrame);
-                thread.callFrame.pushTo(operandFrame, pushCount);
-                thread.callFrame = operandFrame;
-            };
-        }
-
-        public static IncIP popOperandFrame(int popCount) {
-            return thread -> {
-                OperandFrame operandFrame = thread.callFrame.outer;
-                thread.callFrame.pushTo(operandFrame, popCount);
-                thread.callFrame = operandFrame;
-            };
-        }*/
 
         public static IncIP extendEnvironment = thread -> {
             Environment environment = (Environment)thread.callFrame.pop();
