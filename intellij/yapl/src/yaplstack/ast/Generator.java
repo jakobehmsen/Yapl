@@ -230,6 +230,25 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
+    public Void visitFrame() {
+        if(asExpression)
+            emit(Instruction.Factory.loadCallFrame);
+
+        return null;
+    }
+
+    @Override
+    public Void visitRet(AST expression) {
+        visitAsExpression(expression);
+        emit(Instruction.Factory.popCallFrame(1));
+
+        if(!asExpression)
+            emit(Instruction.Factory.pop);
+
+        return null;
+    }
+
+    @Override
     public Void visitLiteral(Object obj) {
         if(asExpression)
             emit(Instruction.Factory.loadConst(obj));

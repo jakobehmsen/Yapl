@@ -43,6 +43,8 @@ public interface AST {
         T visitItoc(AST i);
         T visitApplyCC(AST target);
         T visitResume(AST target, List<AST> args);
+        T visitFrame();
+        T visitRet(AST expression);
     }
 
     class Factory {
@@ -191,6 +193,23 @@ public interface AST {
                 }
             };
         }
+
+        public static AST frame = new AST() {
+            @Override
+            public <T> T accept(Visitor<T> visitor) {
+                return visitor.visitFrame();
+            }
+        };
+
+        public static AST ret(AST expression) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitRet(expression);
+                }
+            };
+        }
+
 
         public static AST applycc(AST target) {
             return new AST() {
