@@ -41,8 +41,6 @@ public class Main {
 
         // push nth element in stack
 
-        String sourceCode = "( 1 ) 34";
-
         /*
 
         {
@@ -133,9 +131,59 @@ public class Main {
             }
         }
 
-        if()
+        defun threeNumbers(m) {
+            m.yield(1);
+            m.yield(2);
+            m.yield(3);
+        }
+
+        defun generate(producer) {
+            {
+                var producer = producer;
+                var hasNext = false;
+                var atEnd = () -> {!hasNext};
+                var next = () -> {
+                    var res = value;
+                    hasNext = false;
+                    yielder.returnFrame = frame;
+                    value = resume(yielder.yieldFrame, nil);
+                    return res;
+                };
+                var yielder = producer({
+                    var returnFrame = nil;
+                    var yieldFrame = nil;
+                    yield = value -> {
+                        hasNext = true;
+                        yieldFrame = frame;
+                        resume(returnFrame, value);
+                    }
+                };
+                yielder.returnFrame = frame;
+                var value = producer(yielder);
+            }
+        }
+
+        var generator1 = generate(threeNumbers);
+
+        while(!generator1.atEnd()) {
+            println(generator1.next());
+        }
 
         */
+
+        AST program = program(block(
+            defun("function", block(
+                ret(frame),
+                ret(literal(1)),
+                ret(literal(2)),
+                ret(literal(3))
+            )),
+            local("c", call("function")),
+            resume(load("c"))
+        ));
+
+
+        /*String sourceCode = "( 1 ) 34";
 
         AST program = program(block(
             defun("println", new String[]{"str"},
@@ -159,7 +207,7 @@ public class Main {
             loop(send(load("inputStream"), "hasMore"),
                 call("println", send(load("inputStream"), "nextChar"))
             )
-        ));
+        ));*/
 
         /*AST program = program(block(
             local("myPoint", object(block(
