@@ -143,10 +143,10 @@ public class Main {
                 var hasNext = false;
                 var atEnd = () -> {!hasNext};
                 var next = () -> {
-                    var res = value;
+                    var res = current;
                     hasNext = false;
                     yielder.returnFrame = frame;
-                    value = resume(yielder.yieldFrame, nil);
+                    resume(yielder.yieldFrame, nil);
                     return res;
                 };
                 var yielder = producer({
@@ -154,12 +154,17 @@ public class Main {
                     var yieldFrame = nil;
                     yield = value -> {
                         hasNext = true;
+                        current = value;
                         yieldFrame = frame;
-                        resume(returnFrame, value);
+                        resume(returnFrame, nil);
                     }
                 };
                 yielder.returnFrame = frame;
-                var value = producer(yielder);
+                var current;
+                () -> {
+                   producer(yielder);
+                   resume(yielder.returnFrame, nil);
+                }()
             }
         }
 
@@ -172,14 +177,53 @@ public class Main {
         */
 
         AST program = program(block(
-            defun("function", block(
-                ret(frame),
-                ret(literal(1)),
-                ret(literal(2)),
-                ret(literal(3))
+            defun("println", new String[]{"str"},
+                invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), invoke(load("str"), Object.class.getMethod("toString")))
+            ),
+
+            defun("numbers", new String[]{"m"}, block(
+                send(load("m"), "yield", literal(1)),
+                send(load("m"), "yield", literal(2)),
+                send(load("m"), "yield", literal(3)),
+                send(load("m"), "yield", literal(4)),
+                send(load("m"), "yield", literal(5))
             )),
-            local("c", call("function")),
-            resume(load("c"))
+
+            defun("generate", new String[]{"producer"}, object(block(
+                local("producer", load("producer")),
+                local("hasNext", literal(false)),
+                defun("atEnd", not(load("hasNext"))),
+                defun("next", block(
+                    local("res", load("current")),
+                    store("hasNext", literal(false)),
+                    store(load("yielder"), "returnFrame", frame),
+                    resume(load(load("yielder"), "yieldFrame"), literal(false)),
+                    //bp,
+                    load("res")
+                )),
+                local("yielder", object(block(
+                    local("returnFrame", literal(false)),
+                    local("yieldFrame", literal(false)),
+                    defun("yield", new String[]{"value"}, block(
+                        store("hasNext", literal(true)),
+                        store("current", load("value")),
+                        store("yieldFrame", frame),
+                        resume(load("returnFrame"), literal(false))
+                    ))
+                ))),
+                local(load("yielder"), "returnFrame", frame),
+                local("current", literal(false)),
+                apply(fn(block(
+                    call("producer", load("yielder")),
+                    resume(load(load("yielder"), "returnFrame"), literal(false))
+                )))
+            ))),
+
+            local("gen", call("generate", load("numbers"))),
+
+            loop(not(send(load("gen"), "atEnd")), block(
+                call("println", send(load("gen"), "next"))
+            ))
         ));
 
 

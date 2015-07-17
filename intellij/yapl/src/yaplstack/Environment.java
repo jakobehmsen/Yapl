@@ -26,6 +26,9 @@ public class Environment {
     }
 
     public Object load(String name) {
+        if(name.equals("yield"))
+            name.toString();
+
         Object value = locals.get(name);
         if(value != null)
             return value;

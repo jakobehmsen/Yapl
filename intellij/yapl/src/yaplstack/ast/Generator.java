@@ -226,6 +226,14 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitResume(AST target, List<AST> args) {
+        args.forEach(x -> visitAsExpression(x));
+        visitAsExpression(target);
+
+        emit(Instruction.Factory.resume(args.size()));
+
+        if(!asExpression)
+            emit(Instruction.Factory.pop);
+
         return null;
     }
 
@@ -244,6 +252,28 @@ public class Generator implements AST.Visitor<Void> {
 
         if(!asExpression)
             emit(Instruction.Factory.pop);
+
+        return null;
+    }
+
+    @Override
+    public Void visitNot(AST expression) {
+        visitAsExpression(expression);
+
+        if(asExpression)
+            emit(Instruction.Factory.not);
+        else
+            emit(Instruction.Factory.pop);
+
+        return null;
+    }
+
+    @Override
+    public Void visitBP() {
+        emit(Instruction.Factory.bp);
+
+        if(asExpression)
+            emit(Instruction.Factory.loadConst(false));
 
         return null;
     }
@@ -422,6 +452,19 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
+    public Void visitLocal(AST target, String name, AST value) {
+        visitAsExpression(target);
+        visitAsExpression(value);
+
+        if(asExpression)
+            emit(Instruction.Factory.dupx1);
+
+        emit(Instruction.Factory.local(name));
+
+        return null;
+    }
+
+    @Override
     public Void visitLocal(String name, AST value) {
         if(functionScope) {
             int localOrdinal = locals.size();
@@ -494,7 +537,7 @@ public class Generator implements AST.Visitor<Void> {
             int localOrdinal = locals.indexOf(name);
 
             if(localOrdinal != -1) {
-                emit(Instruction.Factory.loadVar(localOrdinal));
+                emit(Instruction.Factory.loadVar(name, localOrdinal));
             } else {
                 emit(Instruction.Factory.loadEnvironment);
                 emit(Instruction.Factory.load(name));

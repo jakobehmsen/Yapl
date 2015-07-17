@@ -28,6 +28,9 @@ public interface Instruction {
         public static IncIP pop = thread -> thread.callFrame.pop();
         public static IncIP swap = thread -> thread.callFrame.swap();
 
+        public static IncIP bp = thread ->
+            new String();
+
         public static Instruction finish = thread -> thread.setFinished();
 
         public static IncIP local(String name) {
@@ -61,8 +64,9 @@ public interface Instruction {
             };
         }
 
-        public static IncIP loadVar(int ordinal) {
+        public static IncIP loadVar(String name, int ordinal) {
             return thread -> {
+                String theName = name;
                 Object value = thread.callFrame.get(ordinal);
                 thread.callFrame.push(value);
             };

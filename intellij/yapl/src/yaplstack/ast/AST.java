@@ -29,6 +29,7 @@ public interface AST {
         T visitFieldSet(Field field, AST value);
         T visitFieldSet(AST target, Field field, AST value);
         T visitOn(AST target, AST code);
+        T visitLocal(AST target, String name, AST value);
         T visitLocal(String name, AST value);
         T visitStore(AST target, String name, AST value);
         T visitStore(String name, AST value);
@@ -45,6 +46,8 @@ public interface AST {
         T visitResume(AST target, List<AST> args);
         T visitFrame();
         T visitRet(AST expression);
+        T visitNot(AST expression);
+        T visitBP();
     }
 
     class Factory {
@@ -109,6 +112,10 @@ public interface AST {
             };
         }
 
+        public static AST fn(AST code) {
+            return fn(new String[0], code);
+        }
+
         public static AST fn(String[] params, AST code) {
             return new AST() {
                 @Override
@@ -123,6 +130,15 @@ public interface AST {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitOn(target, code);
+                }
+            };
+        }
+
+        public static AST local(AST target, String name, AST value) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitLocal(target, name, value);
                 }
             };
         }
@@ -184,6 +200,13 @@ public interface AST {
         public static AST call(String name, AST... arguments) {
             return apply(load(name), arguments);
         }
+
+        public static AST bp = new AST() {
+            @Override
+            public <T> T accept(Visitor<T> visitor) {
+                return visitor.visitBP();
+            }
+        };
 
         public static AST resume(AST target, AST... arguments) {
             return new AST() {
@@ -378,6 +401,15 @@ public interface AST {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitItoc(i);
+                }
+            };
+        }
+
+        public static AST not(AST expression) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitNot(expression);
                 }
             };
         }
