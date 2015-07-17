@@ -180,6 +180,7 @@ public class Main {
             defun("println", new String[]{"str"},
                 invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), invoke(load("str"), Object.class.getMethod("toString")))
             ),
+            //send(env(), "println", literal("Hello World"))
 
             defun("numbers", new String[]{"m"}, block(
                 send(load("m"), "yield", literal(1)),
@@ -197,8 +198,8 @@ public class Main {
                     local("res", load("current")),
                     store("hasNext", literal(false)),
                     store(load("yielder"), "returnFrame", frame),
-                    resume(load(load("yielder"), "yieldFrame"), literal(false)),
                     //bp,
+                    resume(load(load("yielder"), "yieldFrame"), literal("false@next")),
                     load("res")
                 )),
                 local("yielder", object(block(
@@ -208,14 +209,15 @@ public class Main {
                         store("hasNext", literal(true)),
                         store("current", load("value")),
                         store("yieldFrame", frame),
-                        resume(load("returnFrame"), literal(false))
+                        //bp,
+                        resume(load("returnFrame"), literal("false@yield"))
                     ))
                 ))),
                 local(load("yielder"), "returnFrame", frame),
                 local("current", literal(false)),
                 apply(fn(block(
                     call("producer", load("yielder")),
-                    resume(load(load("yielder"), "returnFrame"), literal(false))
+                    resume(load(load("yielder"), "returnFrame"), literal("false@fn"))
                 )))
             ))),
 

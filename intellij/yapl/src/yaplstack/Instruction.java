@@ -31,6 +31,15 @@ public interface Instruction {
         public static IncIP bp = thread ->
             new String();
 
+        public static Instruction resume(int pushCount) {
+            return thread -> {
+                CallFrame target = (CallFrame)thread.callFrame.pop();
+                thread.callFrame.pushTo(target, pushCount);
+                target.incrementIP();
+                thread.callFrame = target;
+            };
+        }
+
         public static Instruction finish = thread -> thread.setFinished();
 
         public static IncIP local(String name) {
@@ -75,8 +84,13 @@ public interface Instruction {
         public static IncIP loadEnvironment = thread ->
             thread.callFrame.push(thread.callFrame.environment);
 
-        public static IncIP storeEnvironment = thread ->
-            thread.callFrame.environment = (Environment)thread.callFrame.pop();
+        public static IncIP storeEnvironment = thread -> {
+            Object val = thread.callFrame.pop();
+            if(val instanceof String)
+                val.toString();
+            thread.callFrame.environment = (Environment) val;
+            //thread.callFrame.environment = (Environment) thread.callFrame.pop();
+        };
 
         public static IncIP loadCallFrame = thread ->
             thread.callFrame.push(thread.callFrame);
@@ -85,16 +99,6 @@ public interface Instruction {
             thread.callFrame = (CallFrame)thread.callFrame.pop();
         public static IncIP loadCurrentContinuation = thread ->
             thread.callFrame.push(thread.callFrame);
-
-
-        public static Instruction resume(int pushCount) {
-            return thread -> {
-                CallFrame target = (CallFrame)thread.callFrame.pop();
-                thread.callFrame.pushTo(target, pushCount);
-                target.incrementIP();
-                thread.callFrame = target;
-            };
-        }
 
         public static Instruction pushCallFrame = thread -> {
             Instruction[] instructions = (Instruction[])thread.callFrame.pop();

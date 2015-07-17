@@ -140,6 +140,30 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
+    public Void visitSend(AST target, String name, List<AST> arguments) {
+        emit(Instruction.Factory.loadEnvironment);
+
+        arguments.forEach(x -> visitAsExpression(x));
+
+        visitAsExpression(target);
+        emit(Instruction.Factory.dup);
+        emit(Instruction.Factory.storeEnvironment);
+        emit(Instruction.Factory.load(name));
+
+        emit(Instruction.Factory.pushCallFrame(arguments.size()));
+
+        //if(asExpression)
+        emit(Instruction.Factory.swap);
+
+        emit(Instruction.Factory.storeEnvironment);
+
+        if(!asExpression)
+            emit(Instruction.Factory.pop);
+
+        return null;
+    }
+
+    @Override
     public Void visitTest(AST condition, AST ifTrue, AST ifFalse) {
         visitAsExpression(condition);
 

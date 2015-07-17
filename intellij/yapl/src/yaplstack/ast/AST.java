@@ -48,6 +48,7 @@ public interface AST {
         T visitRet(AST expression);
         T visitNot(AST expression);
         T visitBP();
+        T visitSend(AST target, String name, List<AST> arguments);
     }
 
     class Factory {
@@ -82,7 +83,14 @@ public interface AST {
         }
 
         public static AST send(AST target, String name, AST... arguments) {
-            return on(target, call(name, arguments));
+            //return on(target, call(name, arguments)); /*arguments are evaluated within the wrong environment*/
+            //return apply(load(target, name), arguments);
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitSend(target, name, Arrays.asList(arguments));
+                }
+            };
         }
 
         public static AST extend(AST target) {
