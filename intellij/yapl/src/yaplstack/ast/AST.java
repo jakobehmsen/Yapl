@@ -43,7 +43,7 @@ public interface AST {
         T visitOuterEnv(AST target);
         T visitItoc(AST i);
         T visitApplyCC(AST target);
-        T visitResume(AST target, List<AST> args);
+        T visitResume(AST target, AST value);
         T visitFrame();
         T visitRet(AST expression);
         T visitNot(AST expression);
@@ -216,11 +216,11 @@ public interface AST {
             }
         };
 
-        public static AST resume(AST target, AST... arguments) {
+        public static AST resume(AST target, AST value) {
             return new AST() {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
-                    return visitor.visitResume(target, Arrays.asList(arguments));
+                    return visitor.visitResume(target, value);
                 }
             };
         }
