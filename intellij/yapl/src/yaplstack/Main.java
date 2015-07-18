@@ -199,7 +199,7 @@ public class Main {
                     store("hasNext", literal(false)),
                     store(load("yielder"), "returnFrame", frame),
                     //bp,
-                    resume(load(load("yielder"), "yieldFrame"), literal("false@next")),
+                    resume(load(load("yielder"), "yieldFrame"), literal(null)),
                     load("res")
                 )),
                 local("yielder", object(block(
@@ -210,14 +210,14 @@ public class Main {
                         store("current", load("value")),
                         store("yieldFrame", frame),
                         //bp,
-                        resume(load("returnFrame"), literal("false@yield"))
+                        resume(load("returnFrame"), literal(null))
                     ))
                 ))),
                 local(load("yielder"), "returnFrame", frame),
                 local("current", literal(false)),
                 apply(fn(block(
                     call("producer", load("yielder")),
-                    resume(load(load("yielder"), "returnFrame"), literal("false@fn"))
+                    resume(load(load("yielder"), "returnFrame"), literal(null))
                 )))
             ))),
 
