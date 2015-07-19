@@ -183,11 +183,17 @@ public class Main {
             //send(env(), "println", literal("Hello World"))
 
             defun("numbers", new String[]{"m"}, block(
+                local("i", literal(0)),
+                loop(lti(load("i"), literal(100)), block(
+                    send(load("m"), "yield", load("i")),
+                    store("i", addi(load("i"), literal(1)))
+                ))/*,
+
                 send(load("m"), "yield", literal(1)),
                 send(load("m"), "yield", literal(2)),
                 send(load("m"), "yield", literal(3)),
                 send(load("m"), "yield", literal(4)),
-                send(load("m"), "yield", literal(5))
+                send(load("m"), "yield", literal(5))*/
             )),
 
             defun("generate", new String[]{"producer"}, object(block(
