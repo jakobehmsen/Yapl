@@ -220,28 +220,9 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
-    public Void visitExtend(AST target) {
-        visitAsExpression(target);
-        emit(Instruction.Factory.extendEnvironment);
-
-        if(!asExpression)
-            emit(Instruction.Factory.pop);
-
-        return null;
-    }
-
-    @Override
     public Void visitEnv() {
         if(asExpression)
             emit(Instruction.Factory.loadEnvironment);
-
-        return null;
-    }
-
-    @Override
-    public Void visitOuterEnv(AST target) {
-        visitAsExpression(target);
-        emit(Instruction.Factory.outerEnvironment);
 
         return null;
     }
@@ -479,7 +460,7 @@ public class Generator implements AST.Visitor<Void> {
         if(asExpression)
             emit(Instruction.Factory.dupx1);
 
-        emit(Instruction.Factory.local(name));
+        emit(Instruction.Factory.store(name));
 
         return null;
     }
@@ -503,7 +484,7 @@ public class Generator implements AST.Visitor<Void> {
             if (asExpression)
                 emit(Instruction.Factory.dupx1);
 
-            emit(Instruction.Factory.local(name));
+            emit(Instruction.Factory.store(name));
         }
 
         return null;

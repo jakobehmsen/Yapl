@@ -42,19 +42,8 @@ public interface Instruction {
 
         public static Instruction finish = thread -> thread.setFinished();
 
-        public static IncIP local(String name) {
-            return thread -> {
-                Object value = thread.callFrame.pop();
-                Environment environment = (Environment)thread.callFrame.pop();
-                environment.local(name, value);
-            };
-        }
-
         public static IncIP store(String name) {
             return thread -> {
-                String n = name;
-                if(name.equals("hasNext"))
-                    n.toString();
                 Object value = thread.callFrame.pop();
                 Environment environment = (Environment)thread.callFrame.pop();
                 environment.store(name, value);
@@ -158,16 +147,6 @@ public interface Instruction {
                 thread.callFrame.incrementIP();
             };
         }
-
-        public static IncIP extendEnvironment = thread -> {
-            Environment environment = (Environment)thread.callFrame.pop();
-            thread.callFrame.push(new Environment(environment));
-        };
-
-        public static IncIP outerEnvironment = thread -> {
-            Environment environment = (Environment)thread.callFrame.pop();
-            thread.callFrame.push(environment.outer);
-        };
 
         public static IncIP outerCallFrame = thread -> {
             CallFrame callFrame = (CallFrame)thread.callFrame.pop();

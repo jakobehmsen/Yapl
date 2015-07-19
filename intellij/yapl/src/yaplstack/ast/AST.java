@@ -37,9 +37,7 @@ public interface AST {
         T visitApply(AST target, List<AST> args);
         T visitTest(AST condition, AST ifTrue, AST ifFalse);
         T visitLoop(AST condition, AST body);
-        T visitExtend(AST target);
         T visitEnv();
-        T visitOuterEnv(AST target);
         T visitItoc(AST i);
         T visitApplyCC(AST target);
         T visitResume(AST target, AST value);
@@ -95,24 +93,6 @@ public interface AST {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitSend(target, name, Arrays.asList(arguments));
-                }
-            };
-        }
-
-        public static AST extend(AST target) {
-            return new AST() {
-                @Override
-                public <T> T accept(Visitor<T> visitor) {
-                    return visitor.visitExtend(target);
-                }
-            };
-        }
-
-        public static AST outerEnv(AST target) {
-            return new AST() {
-                @Override
-                public <T> T accept(Visitor<T> visitor) {
-                    return visitor.visitOuterEnv(target);
                 }
             };
         }
