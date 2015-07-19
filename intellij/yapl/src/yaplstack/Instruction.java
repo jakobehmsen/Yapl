@@ -17,8 +17,6 @@ public interface Instruction {
     }
 
     class Factory {
-
-
         public static IncIP loadConst(Object obj) {
             return thread -> thread.callFrame.push(obj);
         }
@@ -27,6 +25,11 @@ public interface Instruction {
         public static IncIP dupx1 = thread -> thread.callFrame.dupx1();
         public static IncIP pop = thread -> thread.callFrame.pop();
         public static IncIP swap = thread -> thread.callFrame.swap();
+
+        public static IncIP swapx(int delta) {
+            return thread ->
+                thread.callFrame.swapx(delta);
+        }
 
         public static IncIP bp = thread ->
             new String();
@@ -75,16 +78,6 @@ public interface Instruction {
 
         public static IncIP newEnvironment = thread ->
             thread.callFrame.push(new Environment());
-
-        public static IncIP loadEnvironment = thread ->
-            thread.callFrame.push(thread.callFrame.environment);
-
-        public static IncIP storeEnvironment = thread -> {
-            Object val = thread.callFrame.pop();
-            if(val instanceof String)
-                val.toString();
-            thread.callFrame.environment = (Environment) val;
-        };
 
         public static IncIP loadCallFrame = thread ->
             thread.callFrame.push(thread.callFrame);

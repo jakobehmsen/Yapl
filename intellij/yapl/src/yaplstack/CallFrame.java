@@ -10,7 +10,10 @@ public class CallFrame {
     public Stack<Object> stack = new Stack<>();
 
     public CallFrame(Instruction[] instructions) {
-        this(new Environment(), null, instructions);
+        //this(new Environment(), null, instructions);
+        environment = null;
+        push(new Environment());
+        this.instructions = instructions;
     }
 
     public CallFrame(Environment environment, CallFrame outer, Instruction[] instructions) {
@@ -53,6 +56,11 @@ public class CallFrame {
     public void swap() {
         Object tmp = stack.pop();
         stack.add(stack.size() - 1, tmp);
+    }
+
+    public void swapx(int delta) {
+        Object tmp = stack.pop();
+        stack.add(stack.size() - delta, tmp);
     }
 
     public Object get(int ordinal) {

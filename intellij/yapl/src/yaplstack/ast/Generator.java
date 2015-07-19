@@ -5,10 +5,7 @@ import yaplstack.Instruction;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -26,7 +23,11 @@ public class Generator implements AST.Visitor<Void> {
     private List<String> locals;
 
     public Generator(boolean asExpression) {
-        this(asExpression, false, new ArrayList<>(), new ArrayList<>(), g -> g.emit(Instruction.Factory.loadEnvironment));
+        this(asExpression, false, new ArrayList<>(), Arrays.asList("self").stream().collect(Collectors.toList()), g -> g.emitLoadSelf());
+    }
+
+    private void emitLoadSelf() {
+        emit(Instruction.Factory.loadVar("self", 0));
     }
 
     public Generator(boolean asExpression, boolean functionScope, List<TwoStageGenerator> stagedInstructions, List<String> locals, Consumer<Generator> implicitEnvironmentAtRoot) {
@@ -131,10 +132,11 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitApply(AST target, List<AST> args) {
+        emitLoadSelf();
         args.forEach(x -> visitAsExpression(x));
         visitAsExpression(target);
         // Forward arguments
-        emit(Instruction.Factory.pushCallFrame(args.size()));
+        emit(Instruction.Factory.pushCallFrame(1 + args.size()));
 
         if(!asExpression)
             emit(Instruction.Factory.pop);
@@ -144,21 +146,16 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitSend(AST target, String name, List<AST> arguments) {
-        emit(Instruction.Factory.loadEnvironment);
-
-        arguments.forEach(x -> visitAsExpression(x));
-
         visitAsExpression(target);
         emit(Instruction.Factory.dup);
-        emit(Instruction.Factory.storeEnvironment);
         emit(Instruction.Factory.load(name));
 
-        emit(Instruction.Factory.pushCallFrame(arguments.size()));
+        if(arguments.size() > 0) {
+            arguments.forEach(x -> visitAsExpression(x));
+            emit(Instruction.Factory.swapx(arguments.size()));
+        }
 
-        //if(asExpression)
-        emit(Instruction.Factory.swap);
-
-        emit(Instruction.Factory.storeEnvironment);
+        emit(Instruction.Factory.pushCallFrame(1 + arguments.size()));
 
         if(!asExpression)
             emit(Instruction.Factory.pop);
@@ -222,7 +219,7 @@ public class Generator implements AST.Visitor<Void> {
     @Override
     public Void visitEnv() {
         if(asExpression)
-            emit(Instruction.Factory.loadEnvironment);
+            emitLoadSelf();
 
         return null;
     }
@@ -476,7 +473,7 @@ public class Generator implements AST.Visitor<Void> {
             emit(Instruction.Factory.storeVar(localOrdinal));
         } else {
             if(asExpression)
-                emit(Instruction.Factory.loadEnvironment);
+                emitLoadSelf();
             else
                 implicitEnvironmentAtRoot.accept(this);
             visitAsExpression(value);
@@ -514,7 +511,7 @@ public class Generator implements AST.Visitor<Void> {
             emit(Instruction.Factory.storeVar(localOrdinal));
         } else {
             if(asExpression)
-                emit(Instruction.Factory.loadEnvironment);
+                emitLoadSelf();
             else
                 implicitEnvironmentAtRoot.accept(this);
             visitAsExpression(value);
@@ -549,7 +546,7 @@ public class Generator implements AST.Visitor<Void> {
             if(localOrdinal != -1) {
                 emit(Instruction.Factory.loadVar(name, localOrdinal));
             } else {
-                emit(Instruction.Factory.loadEnvironment);
+                emitLoadSelf();
                 emit(Instruction.Factory.load(name));
             }
         }
