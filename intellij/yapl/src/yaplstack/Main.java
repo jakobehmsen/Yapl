@@ -240,7 +240,7 @@ public class Main {
                 )))
             ))),*/
 
-            defun("generate", new String[]{"producer"}, block(
+            /*defun("generate", new String[]{"producer"}, block(
                 local("generator", object(block(
                     local("producer", load("producer")),
                     local("hasNext", literal(false)),
@@ -266,11 +266,42 @@ public class Main {
                     ))),
                     local("current", literal(false))
                 ))),
+
                 local(load(load("generator"), "yielder"), "returnFrame", frame),
                 local(load(load("generator"), "yielder"), "outer", load("generator")),
                 apply(fn(new String[]{"producer", "generator"}, block(
                     call("producer", load(load("generator"), "yielder")),
                     resume(load(load(load("generator"), "yielder"), "returnFrame"), literal(null))
+                )), load("producer"), load("generator")),
+                load("generator")
+            )),*/
+
+            defun("generate", new String[]{"producer"}, block(
+                local("generator", object(block(
+                    local("producer", load("producer")),
+                    local("hasNext", literal(false)),
+                    defun("atEnd", not(load("hasNext"))),
+                    defun("next", block(
+                        local("res", load("current")),
+                        store("hasNext", literal(false)),
+                        store("returnFrame", frame),
+                        resume(load("yieldFrame"), literal(null)),
+                        load("res")
+                    )),
+                    local("returnFrame", literal(false)),
+                    local("yieldFrame", literal(false)),
+                    defun("yield", new String[]{"value"}, block(
+                        store("hasNext", literal(true)),
+                        store("current", load("value")),
+                        store("yieldFrame", frame),
+                        resume(load("returnFrame"), literal(null))
+                    )),
+                    local("current", literal(false)),
+                    local("returnFrame", frame)
+                ))),
+                apply(fn(new String[]{"producer", "generator"}, block(
+                    call("producer", load("generator")),
+                    resume(load(load("generator"), "returnFrame"), literal(null))
                 )), load("producer"), load("generator")),
                 load("generator")
             )),
