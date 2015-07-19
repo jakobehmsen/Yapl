@@ -84,21 +84,10 @@ public interface Instruction {
             if(val instanceof String)
                 val.toString();
             thread.callFrame.environment = (Environment) val;
-            //thread.callFrame.environment = (Environment) thread.callFrame.pop();
         };
 
         public static IncIP loadCallFrame = thread ->
             thread.callFrame.push(thread.callFrame);
-
-        public static IncIP storeCallFrame = thread ->
-            thread.callFrame = (CallFrame)thread.callFrame.pop();
-        public static IncIP loadCurrentContinuation = thread ->
-            thread.callFrame.push(thread.callFrame);
-
-        public static Instruction pushCallFrame = thread -> {
-            Instruction[] instructions = (Instruction[])thread.callFrame.pop();
-            thread.callFrame = new CallFrame(thread.callFrame.environment, thread.callFrame, instructions);
-        };
 
         public static Instruction pushCallFrame(int pushCount) {
             return thread -> {
@@ -107,23 +96,6 @@ public interface Instruction {
                 thread.callFrame.outer.pushTo(thread.callFrame, pushCount);
             };
         }
-
-        public static Instruction pushCallFrameFrom = thread -> {
-            Instruction[] instructions = (Instruction[])thread.callFrame.pop();
-            CallFrame callFrame = (CallFrame)thread.callFrame.pop();
-            thread.callFrame = new CallFrame(thread.callFrame.environment, callFrame, instructions);
-        };
-
-        public static Instruction pushConditionalCallFrame = thread -> {
-            boolean condition = (boolean)thread.callFrame.pop();;
-            Instruction[] instructionsIfFalse = (Instruction[])thread.callFrame.pop();
-            Instruction[] instructionsIfTrue = (Instruction[])thread.callFrame.pop();
-
-            if(condition)
-                thread.callFrame = new CallFrame(thread.callFrame.environment, thread.callFrame, instructionsIfTrue);
-            else
-                thread.callFrame = new CallFrame(thread.callFrame.environment, thread.callFrame, instructionsIfFalse);
-        };
 
         public static Instruction jumpIfTrue(int index) {
             return thread -> {
@@ -135,11 +107,6 @@ public interface Instruction {
             };
         };
 
-        public static Instruction popCallFrame = thread -> {
-            thread.callFrame = thread.callFrame.outer;
-            thread.callFrame.incrementIP();
-        };
-
         public static Instruction popCallFrame(int pushCount) {
             return thread -> {
                 thread.callFrame.pushTo(thread.callFrame.outer, pushCount);
@@ -147,16 +114,6 @@ public interface Instruction {
                 thread.callFrame.incrementIP();
             };
         }
-
-        public static IncIP outerCallFrame = thread -> {
-            CallFrame callFrame = (CallFrame)thread.callFrame.pop();
-            thread.callFrame.push(callFrame.outer);
-        };
-
-        public static IncIP callFrameInstructions = thread -> {
-            CallFrame callFrame = (CallFrame)thread.callFrame.pop();
-            thread.callFrame.push(callFrame.instructions);
-        };
 
         private static <T, R> IncIP unaryReducer(Function<T, R> reducer) {
             return thread -> {
