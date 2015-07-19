@@ -28,7 +28,6 @@ public interface AST {
         T visitFieldGet(AST target, Field field);
         T visitFieldSet(Field field, AST value);
         T visitFieldSet(AST target, Field field, AST value);
-        T visitOn(AST target, AST code);
         T visitLocal(AST target, String name, AST value);
         T visitLocal(String name, AST value);
         T visitStore(AST target, String name, AST value);
@@ -49,6 +48,7 @@ public interface AST {
         T visitNot(AST expression);
         T visitBP();
         T visitSend(AST target, String name, List<AST> arguments);
+        T visitObject(AST body);
     }
 
     class Factory {
@@ -79,7 +79,13 @@ public interface AST {
         }
 
         public static AST object(AST body) {
-            return on(extend(env()), block(body, env()));
+            //return on(extend(env()), block(body, env()));
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitObject(body);
+                }
+            };
         }
 
         public static AST send(AST target, String name, AST... arguments) {
@@ -129,15 +135,6 @@ public interface AST {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitFN(Arrays.asList(params), code);
-                }
-            };
-        }
-
-        public static AST on(AST target, AST code) {
-            return new AST() {
-                @Override
-                public <T> T accept(Visitor<T> visitor) {
-                    return visitor.visitOn(target, code);
                 }
             };
         }

@@ -1,6 +1,7 @@
 package yaplstack;
 
 import java.util.Hashtable;
+import java.util.stream.Collectors;
 
 public class Environment {
     private static final Object NULL = new Object();
@@ -39,5 +40,10 @@ public class Environment {
         if(value != null)
             return value != NULL ? value : null;
         return outer.load(name);
+    }
+
+    @Override
+    public String toString() {
+        return locals.entrySet().stream().collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue() instanceof Environment ? "{...}" : x.getValue())).toString();
     }
 }

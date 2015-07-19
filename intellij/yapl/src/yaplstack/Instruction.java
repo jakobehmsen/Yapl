@@ -52,6 +52,9 @@ public interface Instruction {
 
         public static IncIP store(String name) {
             return thread -> {
+                String n = name;
+                if(name.equals("hasNext"))
+                    n.toString();
                 Object value = thread.callFrame.pop();
                 Environment environment = (Environment)thread.callFrame.pop();
                 environment.store(name, value);
@@ -80,6 +83,9 @@ public interface Instruction {
                 thread.callFrame.push(value);
             };
         }
+
+        public static IncIP newEnvironment = thread ->
+            thread.callFrame.push(new Environment());
 
         public static IncIP loadEnvironment = thread ->
             thread.callFrame.push(thread.callFrame.environment);

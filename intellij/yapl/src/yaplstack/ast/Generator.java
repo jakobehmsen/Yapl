@@ -20,19 +20,22 @@ public class Generator implements AST.Visitor<Void> {
 
     private boolean asExpression;
     private boolean functionScope;
+    private Consumer<Generator> implicitEnvironmentAtRoot;
     private List<TwoStageGenerator> stagedInstructions = new ArrayList<>();
 
     private List<String> locals;
 
     public Generator(boolean asExpression) {
-        this(asExpression, false, new ArrayList<>(), new ArrayList<>());
+        this(asExpression, false, new ArrayList<>(), new ArrayList<>(), g -> g.emit(Instruction.Factory.loadEnvironment));
     }
 
-    public Generator(boolean asExpression, boolean functionScope, List<TwoStageGenerator> stagedInstructions, List<String> locals) {
+    public Generator(boolean asExpression, boolean functionScope, List<TwoStageGenerator> stagedInstructions, List<String> locals, Consumer<Generator> implicitEnvironmentAtRoot) {
         this.stagedInstructions = stagedInstructions;
         this.asExpression = asExpression;
         this.functionScope = functionScope;
         this.locals = locals;
+
+        this.implicitEnvironmentAtRoot = implicitEnvironmentAtRoot;
     }
 
     private void mark(Object label) {
@@ -159,6 +162,14 @@ public class Generator implements AST.Visitor<Void> {
 
         if(!asExpression)
             emit(Instruction.Factory.pop);
+
+        return null;
+    }
+
+    @Override
+    public Void visitObject(AST body) {
+        emit(Instruction.Factory.newEnvironment);
+        visitAsObject(body);
 
         return null;
     }
@@ -461,21 +472,6 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
-    public Void visitOn(AST target, AST code) {
-        emit(Instruction.Factory.loadEnvironment);
-        visitAsExpression(target);
-        emit(Instruction.Factory.storeEnvironment);
-
-        visitAsNonFunction(code);
-
-        if(asExpression)
-            emit(Instruction.Factory.swap);
-        emit(Instruction.Factory.storeEnvironment);
-
-        return null;
-    }
-
-    @Override
     public Void visitLocal(AST target, String name, AST value) {
         visitAsExpression(target);
         visitAsExpression(value);
@@ -498,7 +494,10 @@ public class Generator implements AST.Visitor<Void> {
                 emit(Instruction.Factory.dup);
             emit(Instruction.Factory.storeVar(localOrdinal));
         } else {
-            emit(Instruction.Factory.loadEnvironment);
+            if(asExpression)
+                emit(Instruction.Factory.loadEnvironment);
+            else
+                implicitEnvironmentAtRoot.accept(this);
             visitAsExpression(value);
 
             if (asExpression)
@@ -533,7 +532,10 @@ public class Generator implements AST.Visitor<Void> {
                 emit(Instruction.Factory.dup);
             emit(Instruction.Factory.storeVar(localOrdinal));
         } else {
-            emit(Instruction.Factory.loadEnvironment);
+            if(asExpression)
+                emit(Instruction.Factory.loadEnvironment);
+            else
+                implicitEnvironmentAtRoot.accept(this);
             visitAsExpression(value);
 
             if (asExpression)
@@ -557,6 +559,9 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitLoad(String name) {
+        if(name.equals("generator"))
+            name.toString();
+
         if(asExpression) {
             int localOrdinal = locals.indexOf(name);
 
@@ -572,17 +577,22 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     private void visitAsNonFunction(AST code) {
-        Generator generator = new Generator(asExpression, false, stagedInstructions, locals);
+        Generator generator = new Generator(asExpression, false, stagedInstructions, locals, implicitEnvironmentAtRoot);
+        code.accept(generator);
+    }
+
+    private void visitAsObject(AST code) {
+        Generator generator = new Generator(false, false, stagedInstructions, locals, g -> g.emit(Instruction.Factory.dup));
         code.accept(generator);
     }
 
     private void visitAsExpression(AST expression) {
-        Generator generator = new Generator(true, functionScope, stagedInstructions, locals);
+        Generator generator = new Generator(true, functionScope, stagedInstructions, locals, implicitEnvironmentAtRoot);
         expression.accept(generator);
     }
 
     private void visitAsStatement(AST statement) {
-        Generator generator = new Generator(false, functionScope, stagedInstructions, locals);
+        Generator generator = new Generator(false, functionScope, stagedInstructions, locals, implicitEnvironmentAtRoot);
         statement.accept(generator);
     }
 
