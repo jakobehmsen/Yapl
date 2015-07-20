@@ -3,8 +3,6 @@ package yaplstack;
 import yaplstack.ast.AST;
 import yaplstack.ast.Generator;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.io.PrintStream;
 
 import static yaplstack.ast.AST.Factory.*;
@@ -176,7 +174,7 @@ public class Main {
 
         */
 
-        AST program = program(block(
+        /*AST program = program(block(
             defun("println", new String[]{"str"},
                 invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), invoke(load("str"), Object.class.getMethod("toString")))
             ),
@@ -187,8 +185,7 @@ public class Main {
             )),
             call("println", literal("Hello")),
             send(env(), "myMsg")
-
-        ));
+        ));*/
 
         /*AST program = program(block(
             defun("println", new String[]{"str"},
@@ -239,6 +236,141 @@ public class Main {
                 call("println", send(load("gen"), "next"))
             ))
         ));*/
+
+        /*
+
+        tokens(input) {
+            return m -> {
+                // input = <frame-load-var: 0>
+                var current = null;
+                while(input.hasNext()) {
+                    current = input.next();
+                    if(isDigit(current)) {
+                    
+                    }
+                }
+            }
+        }
+
+        */
+
+
+        /*AST program = program(block(
+            local("point", object2(
+                field("x", literal(7)),
+                field("y", literal(9)),
+                method("area", muli(load("x"), load("y"))),
+                method("area", new String[]{"z"}, muli(muli(load("x"), load("y")), load("z")))
+            )),
+            //send(load("point"), "area")
+            //send(load("point"), "area", literal(11))
+            load("point")
+        ));*/
+
+        String sourceCode = "( 1 ) 34";
+
+        AST program = program(block(
+            defun("println", new String[]{"str"},
+                invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), invoke(load("str"), Object.class.getMethod("toString")))
+            ),
+
+            defun("numbers", new String[]{"m"}, block(
+                local("i", literal(0)),
+                loop(lti(load("i"), literal(100)), block(
+                    send(load("m"), "yield", load("i")),
+                    store("i", addi(load("i"), literal(1)))
+                ))
+            )),
+
+            defun("generate", new String[]{"producer"}, block(
+                local("generator", object(
+                    field("producer", load("producer")),
+                    field("hasNext", literal(false)),
+                    method("atEnd", not(load("hasNext"))),
+                    method("next", block(
+                        local("res", load("current")),
+                        store("hasNext", literal(false)),
+                        store("returnFrame", frame),
+                        resume(load("yieldFrame"), literal(null)),
+                        load("res")
+                    )),
+                    field("returnFrame", literal(false)),
+                    field("yieldFrame", literal(false)),
+                    method("yield", new String[]{"value"}, block(
+                        store("hasNext", literal(true)),
+                        store("current", load("value")),
+                        store("yieldFrame", frame),
+                        resume(load("returnFrame"), literal(null))
+                    )),
+                    field("current", literal(false)),
+                    field("returnFrame", frame)
+                )),
+                apply(fn(new String[]{"producer", "generator"}, block(
+                    call("producer", load("generator")),
+                    resume(load(load("generator"), "returnFrame"), literal(null))
+                )), load("producer"), load("generator")),
+                load("generator")
+            )),
+
+            local("gen", call("generate", load("numbers"))),
+
+            loop(not(send(load("gen"), "atEnd")), block(
+                call("println", send(load("gen"), "next"))
+            ))
+        ));
+
+        /*AST program = program(block(
+            defun("println", new String[]{"str"},
+                invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), invoke(load("str"), Object.class.getMethod("toString")))
+            ),
+
+            defun("tokens", new String[]{"m"}, block(
+                local("i", literal(0)),
+                loop(lti(load("i"), literal(100)), block(
+                    // Load closed locals in side by side of arguments
+                    send(load("m"), "yield", load("i")),
+                    store("i", addi(load("i"), literal(1)))
+                ))
+            )),
+
+            defun("generate", new String[]{"producer"}, block(
+                local("generator", object(block(
+                    local("producer", load("producer")),
+                    local("hasNext", literal(false)),
+                    defun("atEnd", not(load("hasNext"))),
+                    defun("next", block(
+                        local("res", load("current")),
+                        store("hasNext", literal(false)),
+                        store("returnFrame", frame),
+                        resume(load("yieldFrame"), literal(null)),
+                        load("res")
+                    )),
+                    local("returnFrame", literal(false)),
+                    local("yieldFrame", literal(false)),
+                    defun("yield", new String[]{"value"}, block(
+                        store("hasNext", literal(true)),
+                        store("current", load("value")),
+                        store("yieldFrame", frame),
+                        resume(load("returnFrame"), literal(null))
+                    )),
+                    local("current", literal(false)),
+                    local("returnFrame", frame)
+                ))),
+                apply(fn(new String[]{"producer", "generator"}, block(
+                    call("producer", load("generator")),
+                    resume(load(load("generator"), "returnFrame"), literal(null))
+                )), load("producer"), load("generator")),
+                load("generator")
+            )),
+
+            local("gen", call("generate", load("numbers"))),
+
+            loop(not(send(load("gen"), "atEnd")), block(
+                call("println", send(load("gen"), "next"))
+            ))
+        ));*/
+
+
 
 
         /*String sourceCode = "( 1 ) 34";

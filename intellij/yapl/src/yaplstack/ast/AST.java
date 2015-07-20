@@ -3,8 +3,10 @@ package yaplstack.ast;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public interface AST {
     <T> T accept(Visitor<T> visitor);
@@ -46,7 +48,7 @@ public interface AST {
         T visitNot(AST expression);
         T visitBP();
         T visitSend(AST target, String name, List<AST> arguments);
-        T visitObject(AST body);
+        T visitObject(List<Slot> slots);
     }
 
     class Factory {
@@ -76,19 +78,28 @@ public interface AST {
             return local(name, fn(params, code));
         }
 
-        public static AST object(AST body) {
-            //return on(extend(env()), block(body, env()));
+        public static Slot field(String name, AST value) {
+            return visitor -> visitor.visitField(name, value);
+        }
+
+        public static Slot method(String name, AST body) {
+            return method(name, new String[0], body);
+        }
+
+        public static Slot method(String name, String[] parameters, AST body) {
+            return visitor -> visitor.visitMethod(name, Arrays.asList(parameters), body);
+        }
+
+        public static AST object(Slot... slots) {
             return new AST() {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
-                    return visitor.visitObject(body);
+                    return visitor.visitObject(Arrays.asList(slots));
                 }
             };
         }
 
         public static AST send(AST target, String name, AST... arguments) {
-            //return on(target, call(name, arguments)); /*arguments are evaluated within the wrong environment*/
-            //return apply(load(target, name), arguments);
             return new AST() {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
