@@ -20,6 +20,8 @@ public class CallFrame {
         this.environment = environment;
         this.outer = outer;
         this.instructions = instructions;
+        if(instructions == null)
+            new String();
     }
 
     public void incrementIP() {

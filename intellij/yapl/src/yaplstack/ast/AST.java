@@ -75,7 +75,7 @@ public interface AST {
         }
 
         public static AST defun(String name, String[] params, AST code) {
-            return local(name, fn(params, code));
+            return local(Selector.get(name, params.length), fn(params, code));
         }
 
         public static Slot field(String name, AST value) {
@@ -194,7 +194,7 @@ public interface AST {
         }
 
         public static AST call(String name, AST... arguments) {
-            return apply(load(name), arguments);
+            return apply(load(Selector.get(name, arguments.length)), arguments);
         }
 
         public static AST bp = new AST() {

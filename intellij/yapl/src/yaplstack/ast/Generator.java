@@ -148,7 +148,7 @@ public class Generator implements AST.Visitor<Void> {
     public Void visitSend(AST target, String name, List<AST> arguments) {
         visitAsExpression(target);
         emit(Instruction.Factory.dup);
-        emit(Instruction.Factory.load(selector(name, arguments.size())));
+        emit(Instruction.Factory.load(Selector.get(name, arguments.size())));
 
         if(arguments.size() > 0) {
             arguments.forEach(x -> visitAsExpression(x));
@@ -180,16 +180,12 @@ public class Generator implements AST.Visitor<Void> {
                 public void visitMethod(String name, List<String> parameters, AST body) {
                     emit(Instruction.Factory.dup);
                     visitAsExpression(AST.Factory.fn(parameters.toArray(new String[parameters.size()]), body));
-                    emit(Instruction.Factory.store(selector(name, parameters.size())));
+                    emit(Instruction.Factory.store(Selector.get(name, parameters.size())));
                 }
             });
         });
 
         return null;
-    }
-
-    private String selector(String name, int arity) {
-        return name + "/" + arity;
     }
 
     @Override

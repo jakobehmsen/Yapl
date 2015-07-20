@@ -274,13 +274,13 @@ public class Main {
                 invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), invoke(load("str"), Object.class.getMethod("toString")))
             ),
 
-            defun("numbers", new String[]{"m"}, block(
+            local("numbers", fn(new String[]{"m"}, block(
                 local("i", literal(0)),
                 loop(lti(load("i"), literal(100)), block(
                     send(load("m"), "yield", load("i")),
                     store("i", addi(load("i"), literal(1)))
                 ))
-            )),
+            ))),
 
             defun("generate", new String[]{"producer"}, block(
                 local("generator", object(
@@ -306,7 +306,7 @@ public class Main {
                     field("returnFrame", frame)
                 )),
                 apply(fn(new String[]{"producer", "generator"}, block(
-                    call("producer", load("generator")),
+                    apply(load("producer"), load("generator")),
                     resume(load(load("generator"), "returnFrame"), literal(null))
                 )), load("producer"), load("generator")),
                 load("generator")
