@@ -87,7 +87,7 @@ public interface Instruction {
                 Instruction[] instructions = (Instruction[])thread.callFrame.pop();
                 if(instructions == null)
                     throw new NullPointerException();
-                thread.callFrame = new CallFrame(thread.callFrame.environment, thread.callFrame, instructions);
+                thread.callFrame = new CallFrame(thread.callFrame, instructions);
                 thread.callFrame.outer.pushTo(thread.callFrame, pushCount);
             };
         }

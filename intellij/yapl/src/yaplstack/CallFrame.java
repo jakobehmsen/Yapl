@@ -4,20 +4,16 @@ import java.util.Stack;
 
 public class CallFrame {
     public CallFrame outer;
-    public Environment environment;
     public final Instruction[] instructions;
     public int ip;
     public Stack<Object> stack = new Stack<>();
 
     public CallFrame(Instruction[] instructions) {
-        //this(new Environment(), null, instructions);
-        environment = null;
         push(new Environment());
         this.instructions = instructions;
     }
 
-    public CallFrame(Environment environment, CallFrame outer, Instruction[] instructions) {
-        this.environment = environment;
+    public CallFrame(CallFrame outer, Instruction[] instructions) {
         this.outer = outer;
         this.instructions = instructions;
         if(instructions == null)
