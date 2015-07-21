@@ -76,6 +76,22 @@ public interface Instruction {
             };
         }
 
+        public static IncIP frameStoreVar(int ordinal) {
+            return thread -> {
+                Object value = thread.callFrame.pop();
+                CallFrame frame = (CallFrame)thread.callFrame.pop();
+                frame.set(ordinal, value);
+            };
+        }
+
+        public static IncIP frameLoadVar(int ordinal) {
+            return thread -> {
+                CallFrame frame = (CallFrame)thread.callFrame.pop();
+                Object value = frame.get(ordinal);
+                thread.callFrame.push(value);
+            };
+        }
+
         public static IncIP newEnvironment = thread ->
             thread.callFrame.push(new Environment());
 

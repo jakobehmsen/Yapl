@@ -49,6 +49,8 @@ public interface AST {
         T visitBP();
         T visitSend(AST target, String name, List<AST> arguments);
         T visitObject(List<Slot> slots);
+        T visitFrameLoad(AST target, int ordinal);
+        T visitFrameStore(AST target, int ordinal, AST value);
     }
 
     class Factory {
@@ -166,6 +168,15 @@ public interface AST {
             };
         }
 
+        public static AST frameStore(AST target, int ordinal, AST value) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitFrameStore(target, ordinal, value);
+                }
+            };
+        }
+
         public static AST load(String name) {
             return new AST() {
                 @Override
@@ -180,6 +191,15 @@ public interface AST {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitLoad(target, name);
+                }
+            };
+        }
+
+        public static AST frameLoad(AST target, int ordinal) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitFrameLoad(target, ordinal);
                 }
             };
         }

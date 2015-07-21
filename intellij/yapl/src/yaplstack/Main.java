@@ -256,7 +256,7 @@ public class Main {
 
 
         /*AST program = program(block(
-            local("point", object2(
+            local("point", object(
                 field("x", literal(7)),
                 field("y", literal(9)),
                 method("area", muli(load("x"), load("y"))),
@@ -267,7 +267,63 @@ public class Main {
             load("point")
         ));*/
 
-        String sourceCode = "( 1 ) 34";
+        /*
+        defun newClosure(x) {
+            var y = 5;
+
+            return {
+                f = frame,
+                call:z => {
+                    frameload(f, 0) * frameload(f, 1) * z;
+                }
+            };
+        }
+
+        (x, y) -> {x * y}
+        =>
+        {
+            call:x, y => {x * y}
+        }
+
+        function = (x, y) -> {x * y}
+
+        function(2, 3)
+        =>
+        function.call(2, 3)
+
+        */
+
+        AST program = program(block(
+            /*defun("newClosure", new String[]{}, block(
+                local("y", literal(5)),
+
+                object(
+                    field("f", frame),
+                    method("call", new String[]{}, frameLoad(load("f"), 1))
+                )
+            )),
+
+            local("closure", call("newClosure")),
+
+            send(load("closure"), "call")*/
+
+            defun("newClosure", new String[]{"x"}, block(
+                local("y", literal(5)),
+
+                object(
+                    field("f", frame),
+                    method("call", new String[]{"z"}, muli(frameLoad(load("f"), 1), muli(frameLoad(load("f"), 2), load("z"))))
+                )
+            )),
+
+            local("closure", call("newClosure", literal(7))),
+
+            send(load("closure"), "call", literal(9))
+
+            //apply(load("closure"), literal(9))
+        ));
+
+        /*String sourceCode = "( 1 ) 34";
 
         AST program = program(block(
             defun("println", new String[]{"str"},
@@ -317,7 +373,7 @@ public class Main {
             loop(not(send(load("gen"), "atEnd")), block(
                 call("println", send(load("gen"), "next"))
             ))
-        ));
+        ));*/
 
         /*AST program = program(block(
             defun("println", new String[]{"str"},

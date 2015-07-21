@@ -189,6 +189,23 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
+    public Void visitFrameLoad(AST target, int ordinal) {
+        visitAsExpression(target);
+        emit(Instruction.Factory.frameLoadVar(ordinal));
+
+        return null;
+    }
+
+    @Override
+    public Void visitFrameStore(AST target, int ordinal, AST value) {
+        visitAsExpression(target);
+        visitAsExpression(value);
+        emit(Instruction.Factory.frameStoreVar(ordinal));
+
+        return null;
+    }
+
+    @Override
     public Void visitTest(AST condition, AST ifTrue, AST ifFalse) {
         visitAsExpression(condition);
 
