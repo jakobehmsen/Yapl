@@ -22,13 +22,18 @@ public interface Instruction {
         }
 
         public static IncIP dup = thread -> thread.callFrame.dup();
-        public static IncIP dupx1 = thread -> thread.callFrame.dupx1();
+        public static IncIP dupx1down = thread -> thread.callFrame.dupx1down();
         public static IncIP pop = thread -> thread.callFrame.pop();
         public static IncIP swap = thread -> thread.callFrame.swap();
 
         public static IncIP swapx(int delta) {
             return thread ->
                 thread.callFrame.swapx(delta);
+        }
+
+        public static IncIP dupx(int delta) {
+            return thread ->
+                thread.callFrame.dupx(delta);
         }
 
         public static IncIP bp = thread ->

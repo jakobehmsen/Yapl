@@ -294,18 +294,8 @@ public class Main {
         */
 
         AST program = program(block(
-            /*defun("newClosure", new String[]{}, block(
-                local("y", literal(5)),
-
-                object(
-                    field("f", frame),
-                    method("call", new String[]{}, frameLoad(load("f"), 1))
-                )
-            )),
-
-            local("closure", call("newClosure")),
-
-            send(load("closure"), "call")*/
+            defun("myFunction", literal("Hello World")),
+            call("myFunction"),
 
             defun("newClosure", new String[]{"x"}, block(
                 local("y", literal(5)),
@@ -318,9 +308,9 @@ public class Main {
 
             local("closure", call("newClosure", literal(7))),
 
-            send(load("closure"), "call", literal(9))
+            apply(load("closure"), literal(9)),
 
-            //apply(load("closure"), literal(9))
+            apply(fn(new String[]{"x", "y"}, muli(load("x"), load("y"))), literal(7), literal(9))
         ));
 
         /*String sourceCode = "( 1 ) 34";

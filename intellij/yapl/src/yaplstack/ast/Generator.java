@@ -147,13 +147,15 @@ public class Generator implements AST.Visitor<Void> {
     @Override
     public Void visitSend(AST target, String name, List<AST> arguments) {
         visitAsExpression(target);
-        emit(Instruction.Factory.dup);
-        emit(Instruction.Factory.load(Selector.get(name, arguments.size())));
 
         if(arguments.size() > 0) {
             arguments.forEach(x -> visitAsExpression(x));
-            emit(Instruction.Factory.swapx(arguments.size()));
+            emit(Instruction.Factory.dupx(arguments.size()));
+        } else {
+            emit(Instruction.Factory.dup);
         }
+
+        emit(Instruction.Factory.load(Selector.get(name, arguments.size())));
 
         emit(Instruction.Factory.pushCallFrame(1 + arguments.size()));
 
@@ -179,8 +181,30 @@ public class Generator implements AST.Visitor<Void> {
                 @Override
                 public void visitMethod(String name, List<String> parameters, AST body) {
                     emit(Instruction.Factory.dup);
-                    visitAsExpression(AST.Factory.fn(parameters.toArray(new String[parameters.size()]), body));
+                    visitMethodContent(parameters, body);
                     emit(Instruction.Factory.store(Selector.get(name, parameters.size())));
+                }
+
+                private void visitMethodContent(List<String> params, AST code) {
+                    Generator bodyGenerator = new Generator(true);
+                    bodyGenerator.functionScope = true;
+                    bodyGenerator.locals.addAll(params);
+                    code.accept(bodyGenerator);
+                    int variableCount = bodyGenerator.locals.size() - params.size();
+
+                    Generator generator = new Generator(true);
+                    generator.locals.addAll(params);
+
+                    // Allocate variables
+                    for(int i = 0; i < variableCount; i++)
+                        generator.emit(Instruction.Factory.loadConst(null));
+
+                    generator.emit(bodyGenerator);
+                    generator.emit(Instruction.Factory.popCallFrame(1));
+
+                    Instruction[] instructionArray = generator.generate();
+
+                    emit(Instruction.Factory.loadConst(instructionArray));
                 }
             });
         });
@@ -476,7 +500,7 @@ public class Generator implements AST.Visitor<Void> {
         visitAsExpression(value);
 
         if(asExpression)
-            emit(Instruction.Factory.dupx1);
+            emit(Instruction.Factory.dupx1down);
 
         emit(Instruction.Factory.fieldSet(field));
 
@@ -489,7 +513,7 @@ public class Generator implements AST.Visitor<Void> {
         visitAsExpression(value);
 
         if(asExpression)
-            emit(Instruction.Factory.dupx1);
+            emit(Instruction.Factory.dupx1down);
 
         emit(Instruction.Factory.store(name));
 
@@ -513,7 +537,7 @@ public class Generator implements AST.Visitor<Void> {
             visitAsExpression(value);
 
             if (asExpression)
-                emit(Instruction.Factory.dupx1);
+                emit(Instruction.Factory.dupx1down);
 
             emit(Instruction.Factory.store(name));
         }
@@ -527,7 +551,7 @@ public class Generator implements AST.Visitor<Void> {
         visitAsExpression(value);
 
         if(asExpression)
-            emit(Instruction.Factory.dupx1);
+            emit(Instruction.Factory.dupx1down);
 
         emit(Instruction.Factory.store(name));
 
@@ -551,7 +575,7 @@ public class Generator implements AST.Visitor<Void> {
             visitAsExpression(value);
 
             if (asExpression)
-                emit(Instruction.Factory.dupx1);
+                emit(Instruction.Factory.dupx1down);
 
             emit(Instruction.Factory.store(name));
         }

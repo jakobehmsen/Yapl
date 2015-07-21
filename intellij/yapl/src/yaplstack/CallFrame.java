@@ -40,8 +40,13 @@ public class CallFrame {
         stack.push(stack.peek());
     }
 
-    public void dupx1() {
+    public void dupx1down() {
         stack.add(stack.size() - 2, stack.peek());
+    }
+
+    public void dupx(int delta) {
+        // From delta, dup to top
+        stack.push(stack.get(stack.size() - delta - 1));
     }
 
     public void pushTo(CallFrame callFrame, int pushCount) {
