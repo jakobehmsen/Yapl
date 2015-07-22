@@ -294,6 +294,16 @@ public class Main {
         */
 
         AST program = program(block(
+            defun("newClosure", new String[]{"x"}, block(
+                local("y", literal(10)),
+                fn(new String[]{"z"}, muli(muli(load("x"), load("y")), load("z")))
+            )),
+
+            local("closure", call("newClosure", literal(7))),
+            apply(load("closure"), literal(8))
+        ));
+
+        /*AST program = program(block(
             defun("myFunction", literal("Hello World")),
             call("myFunction"),
 
@@ -311,7 +321,7 @@ public class Main {
             apply(load("closure"), literal(9)),
 
             apply(fn(new String[]{"x", "y"}, muli(load("x"), load("y"))), literal(7), literal(9))
-        ));
+        ));*/
 
         /*String sourceCode = "( 1 ) 34";
 

@@ -124,6 +124,12 @@ public interface AST {
         }
 
         public static AST fn(String[] params, AST code) {
+            /*return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitFN(Arrays.asList(params), code);
+                }
+            };*/
             return object(
                 method("call", params, code)
             );
@@ -203,6 +209,12 @@ public interface AST {
 
         public static AST apply(AST target, AST... arguments) {
             return send(target, "call", arguments);
+            /*return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitApply(target, Arrays.asList(arguments));
+                }
+            };*/
         }
 
         public static AST call(String name, AST... arguments) {

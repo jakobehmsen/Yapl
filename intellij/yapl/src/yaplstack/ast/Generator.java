@@ -20,21 +20,28 @@ public class Generator implements AST.Visitor<Void> {
     private Consumer<Generator> implicitEnvironmentAtRoot;
     private List<TwoStageGenerator> stagedInstructions = new ArrayList<>();
 
-    private List<String> locals;
+    private MetaFrame context;
+    //private List<LocalInfo> locals;
 
     public Generator(boolean asExpression) {
-        this(asExpression, false, new ArrayList<>(), Arrays.asList("self").stream().collect(Collectors.toList()), g -> g.emitLoadSelf());
+        this(asExpression, false, new ArrayList<>(), createContext(), g -> g.emitLoadSelf());
     }
 
-    private void emitLoadSelf() {
+    private static MetaFrame createContext() {
+        MetaFrame context = new MetaFrame();
+        context.locals.add("self");
+        return context;
+    }
+
+    public void emitLoadSelf() {
         emit(Instruction.Factory.loadVar("self", 0));
     }
 
-    public Generator(boolean asExpression, boolean functionScope, List<TwoStageGenerator> stagedInstructions, List<String> locals, Consumer<Generator> implicitEnvironmentAtRoot) {
+    public Generator(boolean asExpression, boolean functionScope, List<TwoStageGenerator> stagedInstructions, MetaFrame context, Consumer<Generator> implicitEnvironmentAtRoot) {
         this.stagedInstructions = stagedInstructions;
         this.asExpression = asExpression;
         this.functionScope = functionScope;
-        this.locals = locals;
+        this.context = context;
 
         this.implicitEnvironmentAtRoot = implicitEnvironmentAtRoot;
     }
@@ -94,14 +101,18 @@ public class Generator implements AST.Visitor<Void> {
     @Override
     public Void visitFN(List<String> params, AST code) {
         if(asExpression) {
+            emit(Instruction.Factory.newEnvironment);
+            emit(Instruction.Factory.dup);
+
             Generator bodyGenerator = new Generator(true);
+            bodyGenerator.context.context = context;
             bodyGenerator.functionScope = true;
-            bodyGenerator.locals.addAll(params);
+            bodyGenerator.context.locals.addAll(params);
             code.accept(bodyGenerator);
-            int variableCount = bodyGenerator.locals.size() - params.size();
+            int variableCount = bodyGenerator.context.locals.size() - params.size();
 
             Generator generator = new Generator(true);
-            generator.locals.addAll(params);
+            generator.context.locals.addAll(params);
 
             // Allocate variables
             for(int i = 0; i < variableCount; i++)
@@ -113,6 +124,8 @@ public class Generator implements AST.Visitor<Void> {
             Instruction[] instructionArray = generator.generate();
 
             emit(Instruction.Factory.loadConst(instructionArray));
+
+            emit(Instruction.Factory.store(Selector.get("call", params.size())));
         }
 
         return null;
@@ -169,6 +182,8 @@ public class Generator implements AST.Visitor<Void> {
     public Void visitObject(List<Slot> slots) {
         emit(Instruction.Factory.newEnvironment);
 
+        HashSet<MetaFrame> dependentContexts = new HashSet<>();
+
         slots.forEach(x -> {
             x.accept(new Slot.Visitor() {
                 @Override
@@ -188,12 +203,14 @@ public class Generator implements AST.Visitor<Void> {
                 private void visitMethodContent(List<String> params, AST code) {
                     Generator bodyGenerator = new Generator(true);
                     bodyGenerator.functionScope = true;
-                    bodyGenerator.locals.addAll(params);
+                    bodyGenerator.context.locals.addAll(params);
+                    //bodyGenerator.context.closedContexts = closedContexts;
+                    bodyGenerator.context.context = context;
                     code.accept(bodyGenerator);
-                    int variableCount = bodyGenerator.locals.size() - params.size();
+                    int variableCount = bodyGenerator.context.locals.size() - params.size();
 
                     Generator generator = new Generator(true);
-                    generator.locals.addAll(params);
+                    generator.context.locals.addAll(params);
 
                     // Allocate variables
                     for(int i = 0; i < variableCount; i++)
@@ -205,9 +222,18 @@ public class Generator implements AST.Visitor<Void> {
                     Instruction[] instructionArray = generator.generate();
 
                     emit(Instruction.Factory.loadConst(instructionArray));
+
+                    if(bodyGenerator.context.isDepedent)
+                        dependentContexts.add(bodyGenerator.context);
                 }
             });
         });
+
+        if(dependentContexts.size() > 0) {
+            emit(Instruction.Factory.dup);
+            emit(Instruction.Factory.loadCallFrame);
+            emit(Instruction.Factory.store("__frame__"));
+        }
 
         return null;
     }
@@ -523,8 +549,8 @@ public class Generator implements AST.Visitor<Void> {
     @Override
     public Void visitLocal(String name, AST value) {
         if(functionScope) {
-            int localOrdinal = locals.size();
-            locals.add(name);
+            int localOrdinal = context.locals.size();
+            context.locals.add(name);
             visitAsExpression(value);
             if (asExpression)
                 emit(Instruction.Factory.dup);
@@ -560,7 +586,7 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitStore(String name, AST value) {
-        int localOrdinal = locals.indexOf(name);
+        int localOrdinal = context.locals.indexOf(name);
 
         if(localOrdinal != -1) {
             visitAsExpression(value);
@@ -595,44 +621,46 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitLoad(String name) {
-        if(name.equals("generator"))
-            name.toString();
+        //if(name.equals("generator"))
+        //    name.toString();
 
         if(asExpression) {
-            int localOrdinal = locals.indexOf(name);
+            context.emitLoad(this, name);
+
+            /*int localOrdinal = context.locals.indexOf(name);
 
             if(localOrdinal != -1) {
                 emit(Instruction.Factory.loadVar(name, localOrdinal));
             } else {
                 emitLoadSelf();
                 emit(Instruction.Factory.load(name));
-            }
+            }*/
         }
 
         return null;
     }
 
     private void visitAsNonFunction(AST code) {
-        Generator generator = new Generator(asExpression, false, stagedInstructions, locals, implicitEnvironmentAtRoot);
+        Generator generator = new Generator(asExpression, false, stagedInstructions, null, implicitEnvironmentAtRoot);
         code.accept(generator);
     }
 
     private void visitAsObject(AST code) {
-        Generator generator = new Generator(false, false, stagedInstructions, locals, g -> g.emit(Instruction.Factory.dup));
+        Generator generator = new Generator(false, false, stagedInstructions, null, g -> g.emit(Instruction.Factory.dup));
         code.accept(generator);
     }
 
     private void visitAsExpression(AST expression) {
-        Generator generator = new Generator(true, functionScope, stagedInstructions, locals, implicitEnvironmentAtRoot);
+        Generator generator = new Generator(true, functionScope, stagedInstructions, context, implicitEnvironmentAtRoot);
         expression.accept(generator);
     }
 
     private void visitAsStatement(AST statement) {
-        Generator generator = new Generator(false, functionScope, stagedInstructions, locals, implicitEnvironmentAtRoot);
+        Generator generator = new Generator(false, functionScope, stagedInstructions, context, implicitEnvironmentAtRoot);
         statement.accept(generator);
     }
 
-    private void emit(Instruction instruction) {
+    public void emit(Instruction instruction) {
         emit((instructions, indexToLabel) -> {
             instructions.add(instruction);
             return () -> {
