@@ -17,14 +17,12 @@ public class Generator implements AST.Visitor<Void> {
 
     private boolean asExpression;
     private boolean functionScope;
-    private Consumer<Generator> implicitEnvironmentAtRoot;
     private List<TwoStageGenerator> stagedInstructions = new ArrayList<>();
 
     private MetaFrame context;
-    //private List<LocalInfo> locals;
 
     public Generator(boolean asExpression) {
-        this(asExpression, false, new ArrayList<>(), createContext(), g -> g.emitLoadSelf());
+        this(asExpression, false, new ArrayList<>(), createContext());
     }
 
     private static MetaFrame createContext() {
@@ -37,13 +35,12 @@ public class Generator implements AST.Visitor<Void> {
         emit(Instruction.Factory.loadVar("self", 0));
     }
 
-    public Generator(boolean asExpression, boolean functionScope, List<TwoStageGenerator> stagedInstructions, MetaFrame context, Consumer<Generator> implicitEnvironmentAtRoot) {
+    public Generator(boolean asExpression, boolean functionScope, List<TwoStageGenerator> stagedInstructions, MetaFrame context) {
         this.stagedInstructions = stagedInstructions;
         this.asExpression = asExpression;
         this.functionScope = functionScope;
         this.context = context;
 
-        this.implicitEnvironmentAtRoot = implicitEnvironmentAtRoot;
     }
 
     private void mark(Object label) {
@@ -556,10 +553,7 @@ public class Generator implements AST.Visitor<Void> {
                 emit(Instruction.Factory.dup);
             emit(Instruction.Factory.storeVar(localOrdinal));
         } else {
-            if(asExpression)
-                emitLoadSelf();
-            else
-                implicitEnvironmentAtRoot.accept(this);
+            emitLoadSelf();
             visitAsExpression(value);
 
             if (asExpression)
@@ -594,10 +588,7 @@ public class Generator implements AST.Visitor<Void> {
                 emit(Instruction.Factory.dup);
             emit(Instruction.Factory.storeVar(localOrdinal));
         } else {
-            if(asExpression)
-                emitLoadSelf();
-            else
-                implicitEnvironmentAtRoot.accept(this);
+            emitLoadSelf();
             visitAsExpression(value);
 
             if (asExpression)
@@ -621,42 +612,29 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitLoad(String name) {
-        //if(name.equals("generator"))
-        //    name.toString();
-
-        if(asExpression) {
+        if(asExpression)
             context.emitLoad(this, name);
-
-            /*int localOrdinal = context.locals.indexOf(name);
-
-            if(localOrdinal != -1) {
-                emit(Instruction.Factory.loadVar(name, localOrdinal));
-            } else {
-                emitLoadSelf();
-                emit(Instruction.Factory.load(name));
-            }*/
-        }
 
         return null;
     }
 
     private void visitAsNonFunction(AST code) {
-        Generator generator = new Generator(asExpression, false, stagedInstructions, null, implicitEnvironmentAtRoot);
+        Generator generator = new Generator(asExpression, false, stagedInstructions, null);
         code.accept(generator);
     }
 
     private void visitAsObject(AST code) {
-        Generator generator = new Generator(false, false, stagedInstructions, null, g -> g.emit(Instruction.Factory.dup));
+        Generator generator = new Generator(false, false, stagedInstructions, null);
         code.accept(generator);
     }
 
     private void visitAsExpression(AST expression) {
-        Generator generator = new Generator(true, functionScope, stagedInstructions, context, implicitEnvironmentAtRoot);
+        Generator generator = new Generator(true, functionScope, stagedInstructions, context);
         expression.accept(generator);
     }
 
     private void visitAsStatement(AST statement) {
-        Generator generator = new Generator(false, functionScope, stagedInstructions, context, implicitEnvironmentAtRoot);
+        Generator generator = new Generator(false, functionScope, stagedInstructions, context);
         statement.accept(generator);
     }
 
