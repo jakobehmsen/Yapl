@@ -220,7 +220,7 @@ public class Generator implements AST.Visitor<Void> {
 
                     emit(Instruction.Factory.loadConst(instructionArray));
 
-                    if(bodyGenerator.context.isDepedent)
+                    if(bodyGenerator.context.isDependent)
                         dependentContexts.add(bodyGenerator.context);
                 }
             });
