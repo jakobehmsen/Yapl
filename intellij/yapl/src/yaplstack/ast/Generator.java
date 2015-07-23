@@ -210,7 +210,7 @@ public class Generator implements AST.Visitor<Void> {
                     generator.context.locals.addAll(params);
 
                     // Allocate variables
-                    for(int i = 0; i < variableCount; i++)
+                    for (int i = 0; i < variableCount; i++)
                         generator.emit(Instruction.Factory.loadConst(null));
 
                     generator.emit(bodyGenerator);
@@ -220,7 +220,7 @@ public class Generator implements AST.Visitor<Void> {
 
                     emit(Instruction.Factory.loadConst(instructionArray));
 
-                    if(bodyGenerator.context.isDependent)
+                    if (bodyGenerator.context.isDependent)
                         dependentContexts.add(bodyGenerator.context);
                 }
             });
@@ -580,22 +580,44 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitStore(String name, AST value) {
-        int localOrdinal = context.locals.indexOf(name);
+        context.emit(name, new MetaFrame.InstructionGenerator() {
+            @Override
+            public void emitForFrame(int distance, MetaFrame target, int ordinal) {
+                if(distance == 0) {
+                    visitAsExpression(value);
+                    if (asExpression)
+                        emit(Instruction.Factory.dup);
+                    emit(Instruction.Factory.storeVar(ordinal));
+                } else if(distance > 0) {
+                    emit(Instruction.Factory.loadVar("self", 0));
+                    emit(Instruction.Factory.load("__frame__"));
 
-        if(localOrdinal != -1) {
-            visitAsExpression(value);
-            if (asExpression)
-                emit(Instruction.Factory.dup);
-            emit(Instruction.Factory.storeVar(localOrdinal));
-        } else {
-            emitLoadSelf();
-            visitAsExpression(value);
+                    for(int i = 1; i < distance; i++) {
+                        emit(Instruction.Factory.loadOuterCallFrame);
+                    }
 
-            if (asExpression)
-                emit(Instruction.Factory.dupx1down);
+                    visitAsExpression(value);
 
-            emit(Instruction.Factory.store(name));
-        }
+                    if (asExpression)
+                        emit(Instruction.Factory.dupx1down);
+
+                    emit(Instruction.Factory.frameStoreVar(ordinal));
+
+                    context.isDependent = true;
+                }
+            }
+
+            @Override
+            public void emitForEnv(String name) {
+                emitLoadSelf();
+                visitAsExpression(value);
+
+                if (asExpression)
+                    emit(Instruction.Factory.dupx1down);
+
+                emit(Instruction.Factory.store(name));
+            }
+        });
 
         return null;
     }
@@ -612,8 +634,33 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitLoad(String name) {
-        if(asExpression)
-            context.emitLoad(this, name);
+        if(asExpression) {
+            context.emit(name, new MetaFrame.InstructionGenerator() {
+                @Override
+                public void emitForFrame(int distance, MetaFrame target, int ordinal) {
+                    if(distance == 0) {
+                        emit(Instruction.Factory.loadVar(name, ordinal));
+                    } else if(distance > 0) {
+                        emit(Instruction.Factory.loadVar("self", 0));
+                        emit(Instruction.Factory.load("__frame__"));
+
+                        for(int i = 1; i < distance; i++) {
+                            emit(Instruction.Factory.loadOuterCallFrame);
+                        }
+
+                        emit(Instruction.Factory.frameLoadVar(ordinal));
+
+                        context.isDependent = true;
+                    }
+                }
+
+                @Override
+                public void emitForEnv(String name) {
+                    emitLoadSelf();
+                    emit(Instruction.Factory.load(name));
+                }
+            });
+        }
 
         return null;
     }

@@ -293,14 +293,33 @@ public class Main {
 
         */
 
+        // Add support for store for closures
+        // Test 2+ levels of closure'ing
         AST program = program(block(
-            defun("newClosure", new String[]{"x"}, block(
+            /*defun("newClosure", new String[]{"x"}, block(
                 local("y", literal(10)),
                 fn(new String[]{"z"}, muli(muli(load("x"), load("y")), load("z")))
             )),
 
             local("closure", call("newClosure", literal(7))),
-            apply(load("closure"), literal(8))
+            apply(load("closure"), literal(8))*/
+
+            defun("println", new String[]{"str"},
+                invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), invoke(load("str"), Object.class.getMethod("toString")))
+            ),
+
+            defun("newClosure", new String[]{"x"}, block(
+                local("y", literal(0)),
+                fn(new String[]{}, block(
+                    store("y", addi(load("y"), load("x")))
+                ))
+            )),
+
+            local("closure", call("newClosure", literal(5))),
+
+            call("println", apply(load("closure"))),
+            call("println", apply(load("closure"))),
+            call("println", apply(load("closure")))
         ));
 
         /*AST program = program(block(

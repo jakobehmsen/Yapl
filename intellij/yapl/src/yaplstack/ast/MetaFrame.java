@@ -1,7 +1,5 @@
 package yaplstack.ast;
 
-import yaplstack.Instruction;
-
 import java.util.ArrayList;
 
 public class MetaFrame {
@@ -17,48 +15,26 @@ public class MetaFrame {
         this.context = context;
     }
 
-    public void emitLoad(Generator generator, String name) {
-        emitLoad(generator, name, this);
+    public interface InstructionGenerator {
+        void emitForFrame(int distance, MetaFrame target, int ordinal);
+        void emitForEnv(String name);
     }
 
-    private void emitLoad(Generator generator, String name, MetaFrame context) {
+    public void emit(String name, InstructionGenerator instructionGenerator) {
+        emit(name, this, 0, instructionGenerator);
+    }
+
+    private void emit(String name, MetaFrame context, int distance, InstructionGenerator instructionGenerator) {
         if(context != null) {
             int localOrdinal = context.locals.indexOf(name);
 
             if(localOrdinal != -1) {
-                int distance = distanceTo(context);
-                if(distance == 0) {
-                    generator.emit(Instruction.Factory.loadVar(name, localOrdinal));
-                } else if(distance > 0) {
-                    generator.emit(Instruction.Factory.loadVar("self", 0));
-                    generator.emit(Instruction.Factory.load("__frame__"));
-
-                    for(int i = 1; i < distance; i++) {
-                        generator.emit(Instruction.Factory.loadOuterCallFrame);
-                    }
-
-                    generator.emit(Instruction.Factory.frameLoadVar(localOrdinal));
-
-                    this.isDependent = true;
-                }
+                instructionGenerator.emitForFrame(distance, context, localOrdinal);
             } else {
-                emitLoad(generator, name, context.context);
+                emit(name, context.context, distance + 1, instructionGenerator);
             }
         } else {
-            generator.emitLoadSelf();
-            generator.emit(Instruction.Factory.load(name));
+            instructionGenerator.emitForEnv(name);
         }
-    }
-
-    private int distanceTo(MetaFrame context) {
-        MetaFrame target = this;
-        int i = 0;
-        while(context != target) {
-            target = target.context;
-            if(target == null)
-                return -1;
-            i++;
-        }
-        return i;
     }
 }
