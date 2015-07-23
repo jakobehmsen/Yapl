@@ -304,7 +304,7 @@ public class Main {
             local("closure", call("newClosure", literal(7))),
             apply(load("closure"), literal(8))*/
 
-            defun("println", new String[]{"str"},
+            /*defun("println", new String[]{"str"},
                 invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), invoke(load("str"), Object.class.getMethod("toString")))
             ),
 
@@ -319,7 +319,25 @@ public class Main {
 
             call("println", apply(load("closure"))),
             call("println", apply(load("closure"))),
-            call("println", apply(load("closure")))
+            call("println", apply(load("closure")))*/
+
+            local("obj0", object(
+                method("mth0", block(
+                    local("x", literal(7)),
+                    object(
+                        method("mth1", fn(
+                            //load("x")
+                            store("x", addi(load("x"), literal(3)))
+                        ))
+                    )
+                ))
+            )),
+
+            local("closure", send(send(load("obj0"), "mth0"), "mth1")),
+
+            apply(load("closure")),
+            apply(load("closure")),
+            apply(load("closure"))
         ));
 
         /*AST program = program(block(

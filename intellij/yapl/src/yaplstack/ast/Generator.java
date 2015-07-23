@@ -592,9 +592,16 @@ public class Generator implements AST.Visitor<Void> {
                     emit(Instruction.Factory.loadVar("self", 0));
                     emit(Instruction.Factory.load("__frame__"));
 
+                    MetaFrame current = context;
+
                     for(int i = 1; i < distance; i++) {
-                        emit(Instruction.Factory.loadOuterCallFrame);
+                        current.isDependent = true;
+                        current = current.context;
+                        emit(Instruction.Factory.frameLoadVar(0));
+                        emit(Instruction.Factory.load("__frame__"));
                     }
+
+                    current.isDependent = true;
 
                     visitAsExpression(value);
 
@@ -602,8 +609,6 @@ public class Generator implements AST.Visitor<Void> {
                         emit(Instruction.Factory.dupx1down);
 
                     emit(Instruction.Factory.frameStoreVar(ordinal));
-
-                    context.isDependent = true;
                 }
             }
 
@@ -644,13 +649,17 @@ public class Generator implements AST.Visitor<Void> {
                         emit(Instruction.Factory.loadVar("self", 0));
                         emit(Instruction.Factory.load("__frame__"));
 
+                        MetaFrame current = context;
+
                         for(int i = 1; i < distance; i++) {
-                            emit(Instruction.Factory.loadOuterCallFrame);
+                            current.isDependent = true;
+                            current = current.context;
+                            emit(Instruction.Factory.frameLoadVar(0));
+                            emit(Instruction.Factory.load("__frame__"));
                         }
 
+                        current.isDependent = true;
                         emit(Instruction.Factory.frameLoadVar(ordinal));
-
-                        context.isDependent = true;
                     }
                 }
 
