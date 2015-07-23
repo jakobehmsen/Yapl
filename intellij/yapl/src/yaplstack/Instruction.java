@@ -103,6 +103,11 @@ public interface Instruction {
         public static IncIP loadCallFrame = thread ->
             thread.callFrame.push(thread.callFrame);
 
+        public static IncIP loadOuterCallFrame = thread -> {
+            CallFrame frame = (CallFrame)thread.callFrame.pop();
+            thread.callFrame.push(frame.outer);
+        };
+
         public static Instruction pushCallFrame(int pushCount) {
             return thread -> {
                 Instruction[] instructions = (Instruction[])thread.callFrame.pop();
