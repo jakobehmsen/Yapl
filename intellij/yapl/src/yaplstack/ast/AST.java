@@ -14,7 +14,6 @@ public interface AST {
     interface Visitor<T> {
         T visitProgram(AST code);
         T visitBlock(List<AST> code);
-        T visitFN(List<String> params, AST code);
         T visitLiteral(Object obj);
         T visitAddi(AST lhs, AST rhs);
         T visitSubi(AST lhs, AST rhs);
@@ -36,7 +35,6 @@ public interface AST {
         T visitStore(String name, AST value);
         T visitLoad(AST target, String name);
         T visitLoad(String name);
-        T visitApply(AST target, List<AST> args);
         T visitTest(AST condition, AST ifTrue, AST ifFalse);
         T visitLoop(AST condition, AST body);
         T visitEnv();
@@ -124,12 +122,6 @@ public interface AST {
         }
 
         public static AST fn(String[] params, AST code) {
-            /*return new AST() {
-                @Override
-                public <T> T accept(Visitor<T> visitor) {
-                    return visitor.visitFN(Arrays.asList(params), code);
-                }
-            };*/
             return object(
                 method("call", params, code)
             );
@@ -171,15 +163,6 @@ public interface AST {
             };
         }
 
-        public static AST frameStore(AST target, int ordinal, AST value) {
-            return new AST() {
-                @Override
-                public <T> T accept(Visitor<T> visitor) {
-                    return visitor.visitFrameStore(target, ordinal, value);
-                }
-            };
-        }
-
         public static AST load(String name) {
             return new AST() {
                 @Override
@@ -198,23 +181,8 @@ public interface AST {
             };
         }
 
-        public static AST frameLoad(AST target, int ordinal) {
-            return new AST() {
-                @Override
-                public <T> T accept(Visitor<T> visitor) {
-                    return visitor.visitFrameLoad(target, ordinal);
-                }
-            };
-        }
-
         public static AST apply(AST target, AST... arguments) {
             return send(target, "call", arguments);
-            /*return new AST() {
-                @Override
-                public <T> T accept(Visitor<T> visitor) {
-                    return visitor.visitApply(target, Arrays.asList(arguments));
-                }
-            };*/
         }
 
         public static AST call(String name, AST... arguments) {
