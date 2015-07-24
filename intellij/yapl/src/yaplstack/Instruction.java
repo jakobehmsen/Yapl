@@ -24,12 +24,6 @@ public interface Instruction {
         public static IncIP dup = thread -> thread.callFrame.dup();
         public static IncIP dupx1down = thread -> thread.callFrame.dupx1down();
         public static IncIP pop = thread -> thread.callFrame.pop();
-        public static IncIP swap = thread -> thread.callFrame.swap();
-
-        public static IncIP swapx(int delta) {
-            return thread ->
-                thread.callFrame.swapx(delta);
-        }
 
         public static IncIP dupx(int delta) {
             return thread ->
@@ -62,6 +56,8 @@ public interface Instruction {
             return thread -> {
                 Environment environment = (Environment)thread.callFrame.pop();
                 Object value = environment.load(name);
+                if(value == null)
+                    throw new RuntimeException("\"" + name + "\" is undefined.");
                 thread.callFrame.push(value);
             };
         }
@@ -73,9 +69,8 @@ public interface Instruction {
             };
         }
 
-        public static IncIP loadVar(String name, int ordinal) {
+        public static IncIP loadVar(int ordinal) {
             return thread -> {
-                String theName = name;
                 Object value = thread.callFrame.get(ordinal);
                 thread.callFrame.push(value);
             };
@@ -102,11 +97,6 @@ public interface Instruction {
 
         public static IncIP loadCallFrame = thread ->
             thread.callFrame.push(thread.callFrame);
-
-        public static IncIP loadOuterCallFrame = thread -> {
-            CallFrame frame = (CallFrame)thread.callFrame.pop();
-            thread.callFrame.push(frame.outer);
-        };
 
         public static Instruction pushCallFrame(int pushCount) {
             return thread -> {
@@ -163,7 +153,7 @@ public interface Instruction {
         public static IncIP divi = binaryReducer((Integer lhs, Integer rhs) -> lhs / rhs);
         public static IncIP lti = binaryReducer((Integer lhs, Integer rhs) -> lhs < rhs);
         public static IncIP gti = binaryReducer((Integer lhs, Integer rhs) -> lhs > rhs);
-        public static IncIP eqi = binaryReducer((Integer lhs, Integer rhs) -> lhs == rhs);
+        public static IncIP eqi = binaryReducer((Integer lhs, Integer rhs) -> (int)lhs == (int)rhs);
 
         public static IncIP itoc = unaryReducer((Integer i) -> (char) i.intValue());
 
