@@ -4,19 +4,14 @@ import java.util.Hashtable;
 import java.util.stream.Collectors;
 
 public class Environment {
-    private static final Object NULL = new Object();
     private Hashtable<Integer, Object> locals = new Hashtable<>();
 
     public void store(int code, Object value) {
-        if(value == null)
-            value = NULL;
-
         locals.put(code, value);
     }
 
     public Object load(int code) {
-        Object value = locals.get(code);
-        return value != NULL ? value : null;
+        return locals.get(code);
     }
 
     @Override
