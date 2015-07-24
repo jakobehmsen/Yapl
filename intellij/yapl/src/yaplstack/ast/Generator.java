@@ -32,7 +32,7 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     public void emitLoadSelf() {
-        emit(Instruction.Factory.loadVar("self", 0));
+        emit(Instruction.Factory.loadVar(0));
     }
 
     public Generator(boolean asExpression, boolean functionScope, List<TwoStageGenerator> stagedInstructions, MetaFrame context) {
@@ -95,39 +95,6 @@ public class Generator implements AST.Visitor<Void> {
         return null;
     }
 
-    @Override
-    public Void visitFN(List<String> params, AST code) {
-        if(asExpression) {
-            emit(Instruction.Factory.newEnvironment);
-            emit(Instruction.Factory.dup);
-
-            Generator bodyGenerator = new Generator(true);
-            bodyGenerator.context.context = context;
-            bodyGenerator.functionScope = true;
-            bodyGenerator.context.locals.addAll(params);
-            code.accept(bodyGenerator);
-            int variableCount = bodyGenerator.context.locals.size() - params.size();
-
-            Generator generator = new Generator(true);
-            generator.context.locals.addAll(params);
-
-            // Allocate variables
-            for(int i = 0; i < variableCount; i++)
-                generator.emit(Instruction.Factory.loadConst(null));
-
-            generator.emit(bodyGenerator);
-            generator.emit(Instruction.Factory.popCallFrame(1));
-
-            Instruction[] instructionArray = generator.generate();
-
-            emit(Instruction.Factory.loadConst(instructionArray));
-
-            emit(Instruction.Factory.store(Selector.get("call", params.size())));
-        }
-
-        return null;
-    }
-
     private Instruction[] generate() {
         ArrayList<Instruction> instructions = new ArrayList<>();
         Hashtable<Object, Integer> labelToIndex = new Hashtable<>();
@@ -138,20 +105,6 @@ public class Generator implements AST.Visitor<Void> {
             .forEach(x -> x.run());
 
         return instructions.stream().toArray(s -> new Instruction[s]);
-    }
-
-    @Override
-    public Void visitApply(AST target, List<AST> args) {
-        emitLoadSelf();
-        args.forEach(x -> visitAsExpression(x));
-        visitAsExpression(target);
-        // Forward arguments
-        emit(Instruction.Factory.pushCallFrame(1 + args.size()));
-
-        if(!asExpression)
-            emit(Instruction.Factory.pop);
-
-        return null;
     }
 
     @Override
@@ -589,7 +542,7 @@ public class Generator implements AST.Visitor<Void> {
                         emit(Instruction.Factory.dup);
                     emit(Instruction.Factory.storeVar(ordinal));
                 } else if(distance > 0) {
-                    emit(Instruction.Factory.loadVar("self", 0));
+                    emit(Instruction.Factory.loadVar(0));
                     emit(Instruction.Factory.load("__frame__"));
 
                     MetaFrame current = context;
@@ -644,9 +597,9 @@ public class Generator implements AST.Visitor<Void> {
                 @Override
                 public void emitForFrame(int distance, MetaFrame target, int ordinal) {
                     if(distance == 0) {
-                        emit(Instruction.Factory.loadVar(name, ordinal));
+                        emit(Instruction.Factory.loadVar(ordinal));
                     } else if(distance > 0) {
-                        emit(Instruction.Factory.loadVar("self", 0));
+                        emit(Instruction.Factory.loadVar(0));
                         emit(Instruction.Factory.load("__frame__"));
 
                         MetaFrame current = context;
