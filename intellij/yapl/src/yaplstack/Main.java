@@ -3,7 +3,7 @@ package yaplstack;
 import yaplstack.ast.AST;
 import yaplstack.ast.Generator;
 
-import java.io.PrintStream;
+import java.io.*;
 
 import static yaplstack.ast.AST.Factory.*;
 
@@ -246,7 +246,7 @@ public class Main {
                 while(input.hasNext()) {
                     current = input.next();
                     if(isDigit(current)) {
-                    
+
                     }
                 }
             }
@@ -295,16 +295,16 @@ public class Main {
 
         // Add support for store for closures
         // Test 2+ levels of closure'ing
-        AST program = program(block(
-            /*defun("newClosure", new String[]{"x"}, block(
+        /*AST program = program(block(
+            defun("newClosure", new String[]{"x"}, block(
                 local("y", literal(10)),
                 fn(new String[]{"z"}, muli(muli(load("x"), load("y")), load("z")))
             )),
 
             local("closure", call("newClosure", literal(7))),
-            apply(load("closure"), literal(8))*/
+            apply(load("closure"), literal(8))
 
-            /*defun("println", new String[]{"str"},
+            defun("println", new String[]{"str"},
                 invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), invoke(load("str"), Object.class.getMethod("toString")))
             ),
 
@@ -319,8 +319,10 @@ public class Main {
 
             call("println", apply(load("closure"))),
             call("println", apply(load("closure"))),
-            call("println", apply(load("closure")))*/
+            call("println", apply(load("closure")))
+        ));*/
 
+        /*AST program = program(block(
             local("obj0", object(
                 method("mth0", block(
                     local("x", literal(7)),
@@ -338,7 +340,7 @@ public class Main {
             apply(load("closure")),
             apply(load("closure")),
             apply(load("closure"))
-        ));
+        ));*/
 
         /*AST program = program(block(
             defun("myFunction", literal("Hello World")),
@@ -360,9 +362,64 @@ public class Main {
             apply(fn(new String[]{"x", "y"}, muli(load("x"), load("y"))), literal(7), literal(9))
         ));*/
 
-        /*String sourceCode = "( 1 ) 34";
+        String sourceCode = "( 12 ) 23";
+        InputStream sourceCodeInputStream = new ByteArrayInputStream(sourceCode.getBytes());
+        Reader sourceCodeInputStreamReader = new InputStreamReader(sourceCodeInputStream);
 
         AST program = program(block(
+            defun("println", new String[]{"str"},
+                invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), invoke(load("str"), Object.class.getMethod("toString")))
+            ),
+
+            defun("generate", new String[]{"producer"}, block(
+                local("generator", object(
+                    field("producer", load("producer")),
+                    field("hasNext", literal(false)),
+                    method("atEnd", not(load("hasNext"))),
+                    method("next", block(
+                        local("res", load("current")),
+                        store("hasNext", literal(false)),
+                        store("returnFrame", frame),
+                        resume(load("yieldFrame"), literal(null)),
+                        load("res")
+                    )),
+                    field("returnFrame", literal(false)),
+                    field("yieldFrame", literal(false)),
+                    method("yield", new String[]{"value"}, block(
+                        store("hasNext", literal(true)),
+                        store("current", load("value")),
+                        store("yieldFrame", frame),
+                        resume(load("returnFrame"), literal(null))
+                    )),
+                    field("current", literal(false)),
+                    field("returnFrame", frame)
+                )),
+                apply(fn(new String[]{"producer", "generator"}, block(
+                    apply(load("producer"), load("generator")),
+                    resume(load(load("generator"), "returnFrame"), literal(null))
+                )), load("producer"), load("generator")),
+                load("generator")
+            )),
+
+            defun("chars", new String[]{"reader"}, fn(new String[]{"m"}, block(
+                local("b", literal(0)),
+                loop(
+                    not(eqi(store("b", invoke(load("reader"), Reader.class.getMethod("read"))), literal(-1))),
+                    block(
+                        local("ch", load("b")),
+                        send(load("m"), "yield", itoc(load("ch")))
+                    )
+                )))
+            ),
+
+            local("gen", call("generate", call("chars", literal(sourceCodeInputStreamReader)))),
+
+            loop(not(send(load("gen"), "atEnd")), block(
+                call("println", send(load("gen"), "next"))
+            ))
+        ));
+
+        /*AST program = program(block(
             defun("println", new String[]{"str"},
                 invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), invoke(load("str"), Object.class.getMethod("toString")))
             ),
