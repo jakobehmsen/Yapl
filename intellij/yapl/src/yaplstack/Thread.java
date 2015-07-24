@@ -1,6 +1,7 @@
 package yaplstack;
 
 public class Thread {
+    public SymbolTable symbolTable = new SymbolTable();
     public CallFrame callFrame;
     private boolean finished;
 

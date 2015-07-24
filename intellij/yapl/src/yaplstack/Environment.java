@@ -5,17 +5,17 @@ import java.util.stream.Collectors;
 
 public class Environment {
     private static final Object NULL = new Object();
-    private Hashtable<String, Object> locals = new Hashtable<>();
+    private Hashtable<Integer, Object> locals = new Hashtable<>();
 
-    public void store(String name, Object value) {
+    public void store(int code, Object value) {
         if(value == null)
             value = NULL;
 
-        locals.put(name, value);
+        locals.put(code, value);
     }
 
-    public Object load(String name) {
-        Object value = locals.get(name);
+    public Object load(int code) {
+        Object value = locals.get(code);
         return value != NULL ? value : null;
     }
 

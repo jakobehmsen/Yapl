@@ -44,20 +44,34 @@ public interface Instruction {
 
         public static Instruction finish = thread -> thread.setFinished();
 
-        public static IncIP store(String name) {
+        public static Instruction store(String name) {
             return thread -> {
-                Object value = thread.callFrame.pop();
-                Environment environment = (Environment)thread.callFrame.pop();
-                environment.store(name, value);
+                int code = thread.symbolTable.getCode(name);
+                thread.callFrame.instructions[thread.callFrame.ip] = store(code);
             };
         }
 
-        public static IncIP load(String name) {
+        public static IncIP store(int code) {
+            return thread -> {
+                Object value = thread.callFrame.pop();
+                Environment environment = (Environment)thread.callFrame.pop();
+                environment.store(code, value);
+            };
+        }
+
+        public static Instruction load(String name) {
+            return thread -> {
+                int code = thread.symbolTable.getCode(name);
+                thread.callFrame.instructions[thread.callFrame.ip] = load(code);
+            };
+        }
+
+        public static IncIP load(int code) {
             return thread -> {
                 Environment environment = (Environment)thread.callFrame.pop();
-                Object value = environment.load(name);
+                Object value = environment.load(code);
                 if(value == null)
-                    throw new RuntimeException("\"" + name + "\" is undefined.");
+                    throw new RuntimeException("\"" + thread.symbolTable.getSymbol(code) + "\" is undefined.");
                 thread.callFrame.push(value);
             };
         }
