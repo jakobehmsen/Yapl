@@ -3,10 +3,8 @@ package yaplstack.ast;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 public interface AST {
     <T> T accept(Visitor<T> visitor);
@@ -47,8 +45,6 @@ public interface AST {
         T visitBP();
         T visitSend(AST target, String name, List<AST> arguments);
         T visitObject(List<Slot> slots);
-        T visitFrameLoad(AST target, int ordinal);
-        T visitFrameStore(AST target, int ordinal, AST value);
         T visitEqc(AST lhs, AST rhs);
     }
 
