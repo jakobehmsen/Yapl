@@ -49,6 +49,7 @@ public interface AST {
         T visitObject(List<Slot> slots);
         T visitFrameLoad(AST target, int ordinal);
         T visitFrameStore(AST target, int ordinal, AST value);
+        T visitEqc(AST lhs, AST rhs);
     }
 
     class Factory {
@@ -231,6 +232,10 @@ public interface AST {
             };
         }
 
+        public static AST test(AST condition, AST ifTrue) {
+            return test(condition, ifTrue, literal(false));
+        }
+
         public static AST test(AST condition, AST ifTrue, AST ifFalse) {
             return new AST() {
                 @Override
@@ -380,6 +385,15 @@ public interface AST {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitEqi(lhs, rhs);
+                }
+            };
+        }
+
+        public static AST eqc(AST lhs, AST rhs) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitEqc(lhs, rhs);
                 }
             };
         }

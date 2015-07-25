@@ -362,7 +362,7 @@ public class Main {
             apply(fn(new String[]{"x", "y"}, muli(load("x"), load("y"))), literal(7), literal(9))
         ));*/
 
-        String sourceCode = "( 12 ) 23";
+        String sourceCode = "()()(())";
         InputStream sourceCodeInputStream = new ByteArrayInputStream(sourceCode.getBytes());
         Reader sourceCodeInputStreamReader = new InputStreamReader(sourceCodeInputStream);
 
@@ -412,10 +412,26 @@ public class Main {
                 )))
             ),
 
-            local("gen", call("generate", call("chars", literal(sourceCodeInputStreamReader)))),
+            defun("tokens", new String[]{"chars"}, fn(new String[]{"m"}, block(
+                loop(not(send(load("chars"), "atEnd")), block(
+                    local("ch", send(load("chars"), "next")),
+                    local("token", test(
+                        eqc(load("ch"), literal('(')),
+                        object(field("type", literal("OPEN_PAR"))),
+                        test(
+                            eqc(load("ch"), literal(')')),
+                            object(field("type", literal("CLOSE_PAR")))
+                        )
+                    )),
+                    send(load("m"), "yield", load("token"))
+                ))
+            ))),
 
-            loop(not(send(load("gen"), "atEnd")), block(
-                call("println", send(load("gen"), "next"))
+            local("charsGen", call("generate", call("chars", literal(sourceCodeInputStreamReader)))),
+            local("tokensGen", call("generate", call("tokens", load("charsGen")))),
+
+            loop(not(send(load("tokensGen"), "atEnd")), block(
+                call("println", send(load("tokensGen"), "next"))
             ))
         ));
 

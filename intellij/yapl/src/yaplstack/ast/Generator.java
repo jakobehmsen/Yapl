@@ -411,6 +411,17 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
+    public Void visitEqc(AST lhs, AST rhs) {
+        if(asExpression) {
+            visitAsExpression(lhs);
+            visitAsExpression(rhs);
+            emit(Instruction.Factory.eqc);
+        }
+
+        return null;
+    }
+
+    @Override
     public Void visitNewInstance(Constructor constructor, List<AST> args) {
         args.forEach(x -> visitAsExpression(x));
         emit(Instruction.Factory.newInstance(constructor));

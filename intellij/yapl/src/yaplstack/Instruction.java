@@ -168,6 +168,7 @@ public interface Instruction {
         public static IncIP lti = binaryReducer((Integer lhs, Integer rhs) -> lhs < rhs);
         public static IncIP gti = binaryReducer((Integer lhs, Integer rhs) -> lhs > rhs);
         public static IncIP eqi = binaryReducer((Integer lhs, Integer rhs) -> (int)lhs == (int)rhs);
+        public static IncIP eqc = binaryReducer((Character lhs, Character rhs) -> (char)lhs == (char)rhs);
 
         public static IncIP itoc = unaryReducer((Integer i) -> (char) i.intValue());
 
