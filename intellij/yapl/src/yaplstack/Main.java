@@ -362,7 +362,33 @@ public class Main {
             apply(fn(new String[]{"x", "y"}, muli(load("x"), load("y"))), literal(7), literal(9))
         ));*/
 
-        String sourceCode = "()()(())";
+        /*AST program = program(block(
+            defun("myFunction", block(
+                local("i", literal(2)),
+                defun("innerFunc", new String[]{"x"}, addi(load("x"), load("i"))),
+                call("innerFunc", literal(7))
+            )),
+            call("myFunction")
+        ));*/
+
+        /*AST program = program(block(
+            local("obj", object(
+                method("atEnd", literal(true))
+            )),
+
+            local("j", literal(false)),
+            loop(
+                and(
+                    not(send(load("obj"), "atEnd")),
+                    invoke(Character.class.getMethod("isWhitespace", char.class), literal('H'))
+                ),
+                block(
+                    store("j", literal(true))
+                )
+            )
+        ));*/
+
+        String sourceCode = "( )     ( ) ())() ";
         InputStream sourceCodeInputStream = new ByteArrayInputStream(sourceCode.getBytes());
         Reader sourceCodeInputStreamReader = new InputStreamReader(sourceCodeInputStream);
 
@@ -413,8 +439,25 @@ public class Main {
             ),
 
             defun("tokens", new String[]{"chars"}, fn(new String[]{"m"}, block(
+                local("ch", literal(false)),
+
+                defun("consume", store("ch", send(load("chars"), "next"))),
+
+                defun("ignore", block(
+                    loop(
+                        and(
+                            block(not(send(load("chars"), "atEnd"))),
+                            invoke(Character.class.getMethod("isWhitespace", char.class), load("ch"))
+                        ),
+                        block(
+                            call("consume")
+                        )
+                    )
+                )),
+
+                call("consume"),
+                call("ignore"),
                 loop(not(send(load("chars"), "atEnd")), block(
-                    local("ch", send(load("chars"), "next")),
                     local("token", test(
                         eqc(load("ch"), literal('(')),
                         object(field("type", literal("OPEN_PAR"))),
@@ -423,7 +466,10 @@ public class Main {
                             object(field("type", literal("CLOSE_PAR")))
                         )
                     )),
-                    send(load("m"), "yield", load("token"))
+                    call("consume"),
+
+                    send(load("m"), "yield", load("token")),
+                    call("ignore")
                 ))
             ))),
 

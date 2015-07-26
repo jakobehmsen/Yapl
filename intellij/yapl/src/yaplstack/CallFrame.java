@@ -1,6 +1,7 @@
 package yaplstack;
 
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 public class CallFrame {
     public CallFrame outer;
@@ -72,5 +73,11 @@ public class CallFrame {
 
     public void set(int ordinal, Object value) {
         stack.set(ordinal, value);
+    }
+
+    public String toString(Thread thread) {
+        return stack.stream().map(x ->
+            x instanceof Environment ? ((Environment)x).toString(thread) : x != null ? x.toString() : "null"
+        ).collect(Collectors.toList()).toString();
     }
 }

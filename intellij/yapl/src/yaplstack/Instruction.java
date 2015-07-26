@@ -240,6 +240,7 @@ public interface Instruction {
                 try {
                     res = method.invoke(obj, args);
                     thread.callFrame.push(res);
+                    thread.toString();
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
                 } catch (InvocationTargetException e) {

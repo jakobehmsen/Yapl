@@ -27,4 +27,9 @@ public class Thread {
     public void setFinished() {
         finished = true;
     }
+
+    @Override
+    public String toString() {
+        return callFrame.toString(this);
+    }
 }

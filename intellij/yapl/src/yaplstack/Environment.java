@@ -18,4 +18,8 @@ public class Environment {
     public String toString() {
         return locals.entrySet().stream().collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue() instanceof Environment ? "{...}" : x.getValue())).toString();
     }
+
+    public String toString(Thread thread) {
+        return locals.entrySet().stream().collect(Collectors.toMap(x -> thread.symbolTable.getSymbol(x.getKey()), x -> x.getValue() instanceof Environment ? "{...}" : x.getValue())).toString();
+    }
 }
