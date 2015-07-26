@@ -76,6 +76,36 @@ public interface Instruction {
             };
         }
 
+        public static Instruction loadd(String name) {
+            return thread -> {
+                int code = thread.symbolTable.getCode(name);
+                thread.callFrame.instructions[thread.callFrame.ip] = loadd(code);
+            };
+        }
+
+        public static IncIP loadd(int code) {
+            return thread -> {
+                // Load via "dynamic scope"
+                CallFrame frame = thread.callFrame;
+
+                while(true) {
+                    Environment environment = (Environment)frame.stack.get(0);
+                    Object value = environment.load(code);
+
+                    if(value != null) {
+                        thread.callFrame.push(value);
+                        return;
+                    }
+
+                    frame = frame.outer;
+                    if(frame == null)
+                        break;
+                }
+
+                throw new RuntimeException("\"" + thread.symbolTable.getSymbol(code) + "\" is undefined.");
+            };
+        }
+
         public static IncIP storeVar(int ordinal) {
             return thread -> {
                 Object value = thread.callFrame.pop();
@@ -198,6 +228,9 @@ public interface Instruction {
             boolean instance = !Modifier.isStatic(method.getModifiers());
 
             return thread -> {
+                if(method.getName().equals("isWhitespace"))
+                    new String();
+
                 int argCount = method.getParameterCount();
                 Object[] args = new Object[argCount];
                 for(int i = argCount - 1; i >= 0; i--)

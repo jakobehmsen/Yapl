@@ -46,6 +46,9 @@ public interface AST {
         T visitSend(AST target, String name, List<AST> arguments);
         T visitObject(List<Slot> slots);
         T visitEqc(AST lhs, AST rhs);
+        T visitLoadD(String name);
+        T visitAnd(AST lhs, AST rhs);
+        T visitOr(AST lhs, AST rhs);
     }
 
     class Factory {
@@ -160,6 +163,15 @@ public interface AST {
             };
         }
 
+        public static AST loadd(String name) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitLoadD(name);
+                }
+            };
+        }
+
         public static AST load(String name) {
             return new AST() {
                 @Override
@@ -184,6 +196,10 @@ public interface AST {
 
         public static AST call(String name, AST... arguments) {
             return apply(load(Selector.get(name, arguments.length)), arguments);
+        }
+
+        public static AST calld(String name, AST... arguments) {
+            return apply(loadd(Selector.get(name, arguments.length)), arguments);
         }
 
         public static AST bp = new AST() {
@@ -408,6 +424,24 @@ public interface AST {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitNot(expression);
+                }
+            };
+        }
+
+        public static AST and(AST lhs, AST rhs) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitAnd(lhs, rhs);
+                }
+            };
+        }
+
+        public static AST or(AST lhs, AST rhs) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitOr(lhs, rhs);
                 }
             };
         }
