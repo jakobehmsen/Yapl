@@ -228,6 +228,7 @@ public interface Instruction {
             boolean instance = !Modifier.isStatic(method.getModifiers());
 
             return thread -> {
+                Method m = method;
                 if(method.getName().equals("isWhitespace"))
                     new String();
 
@@ -244,6 +245,8 @@ public interface Instruction {
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
                 } catch (InvocationTargetException e) {
+                    e.printStackTrace();
+                } catch(IllegalArgumentException e) {
                     e.printStackTrace();
                 }
 

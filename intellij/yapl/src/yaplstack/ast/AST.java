@@ -402,6 +402,16 @@ public interface AST {
             };
         }
 
+        /*public static AST gtei(AST lhs, AST rhs) {
+            return keep(
+                lhs, rhs,
+                or(
+                    gtei(top0, top1),
+                    eqc(top0, top1)
+                )
+            );
+        }*/
+
         public static AST eqc(AST lhs, AST rhs) {
             return new AST() {
                 @Override

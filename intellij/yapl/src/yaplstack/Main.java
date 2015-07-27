@@ -389,7 +389,7 @@ public class Main {
             )
         ));*/
 
-        String sourceCode = " ( 12)   )";
+        String sourceCode = " ( )";
         InputStream sourceCodeInputStream = new ByteArrayInputStream(sourceCode.getBytes());
         Reader sourceCodeInputStreamReader = new InputStreamReader(sourceCodeInputStream);
 
@@ -428,6 +428,32 @@ public class Main {
                 load("generator")
             )),
 
+            defun("buffer", new String[]{"stream"}, object(
+                field("items", newInstance(ArrayList.class.getConstructor())),
+                field("index", literal(0)),
+                method("consume", store("index", addi(load("index"), literal(1)))),
+                method("atEnd", block(
+                    send(env(), "ensureBuffered"),
+                    not(lti(load("index"), invoke(load("items"), ArrayList.class.getMethod("size"))))
+                )),
+                method("peek", send(env(), "la", literal(0))),
+                method("peek1", send(env(), "la", literal(1))),
+                method("la", new String[]{"i"}, block(
+                    block(
+                        send(env(), "ensureBuffered"),
+                        test(lti(load("index"), invoke(load("items"), ArrayList.class.getMethod("size"))),
+                            invoke(load("items"), ArrayList.class.getMethod("get", int.class), load("index")),
+                            literal(false)
+                        )
+                    )
+                )),
+                method("ensureBuffered", block(
+                    loop(and(not(send(load("stream"), "atEnd")), not(lti(load("index"), invoke(load("items"), ArrayList.class.getMethod("size"))))), block(
+                        invoke(load("items"), ArrayList.class.getMethod("add", Object.class), send(load("stream"), "next"))
+                    ))
+                ))
+            )),
+
             defun("chars", new String[]{"reader"}, fn(new String[]{"m"}, block(
                 local("b", literal(0)),
                 loop(
@@ -440,7 +466,7 @@ public class Main {
             ),
 
             defun("tokens", new String[]{"chars"}, fn(new String[]{"m"}, block(
-                local("ch", literal(false)),
+                /*local("ch", literal(false)),
                 local("ch1", literal(false)),
                 local("atEnd", literal(false)),
                 local("atEnd1", literal(false)),
@@ -466,37 +492,52 @@ public class Main {
                 )),
 
                 call("consume"),
+                call("ignore"),*/
+
+                defun("ignore", block(
+                    loop(
+                        and(
+                            not(send(load("chars"), "atEnd")),
+                            invoke(Character.class.getMethod("isWhitespace", char.class), send(load("chars"), "peek"))
+                        ),
+                        block(
+                            send(load("chars"), "consume")
+                        )
+                    )
+                )),
+
                 call("ignore"),
-                loop(not(load("atEnd")), block(
+
+                loop(not(send(load("chars"), "atEnd")), block(
                     local("token", literal(false)),
 
                     test(
-                        eqc(load("ch"), literal('(')),
+                        eqc(send(load("chars"), "peek"), literal('(')),
                         block(
                             store("token", object(field("type", literal("OPEN_PAR")))),
-                            call("consume")
+                            send(load("chars"), "consume")
                         ),
                         test(
-                            eqc(load("ch"), literal(')')),
+                            eqc(send(load("chars"), "peek"), literal(')')),
                             block(
                                 store("token", object(field("type", literal("CLOSE_PAR")))),
-                                call("consume")
+                                send(load("chars"), "consume")
                             ),
                             test(
-                                invoke(Character.class.getMethod("isDigit", char.class), load("ch")),
+                                invoke(Character.class.getMethod("isDigit", char.class), send(load("chars"), "peek")),
                                 block(
                                     local("digits", newInstance(StringBuilder.class.getConstructor())),
-                                    invoke(load("digits"), StringBuilder.class.getMethod("append", char.class), load("ch")),
-                                    call("consume"),
+                                    invoke(load("digits"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
+                                    send(load("chars"), "consume"),
 
                                     loop(
                                         and(
-                                            not(load("atEnd")),
-                                            invoke(Character.class.getMethod("isDigit", char.class), load("ch"))
+                                            not(send(load("chars"), "atEnd")),
+                                            invoke(Character.class.getMethod("isDigit", char.class), send(load("chars"), "peek"))
                                         ),
                                         block(
-                                            invoke(load("digits"), StringBuilder.class.getMethod("append", char.class), load("ch")),
-                                            call("consume")
+                                            invoke(load("digits"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
+                                            send(load("chars"), "consume")
                                         )
                                     ),
 
@@ -514,12 +555,26 @@ public class Main {
                 ))
             ))),
 
-            local("charsGen", call("generate", call("chars", literal(sourceCodeInputStreamReader)))),
+            /*local("charsGen", call("generate", call("chars", literal(sourceCodeInputStreamReader)))),
+            local("tokensGen", call("generate", call("tokens", load("charsGen")))),
+
+            loop(not(send(load("tokensGen"), "atEnd")), block(
+                call("println", send(load("tokensGen"), "next"))
+            ))*/
+
+            local("charsGen", call("buffer", call("generate", call("chars", literal(sourceCodeInputStreamReader))))),
             local("tokensGen", call("generate", call("tokens", load("charsGen")))),
 
             loop(not(send(load("tokensGen"), "atEnd")), block(
                 call("println", send(load("tokensGen"), "next"))
             ))
+
+            /*local("charsGen", call("buffer", call("generate", call("chars", literal(sourceCodeInputStreamReader))))),
+
+            loop(not(send(load("charsGen"), "atEnd")), block(
+                call("println", send(load("charsGen"), "peek")),
+                send(load("charsGen"), "consume")
+            ))*/
         ));
 
         /*AST program = program(block(
