@@ -4,6 +4,7 @@ import yaplstack.ast.AST;
 import yaplstack.ast.Generator;
 
 import java.io.*;
+import java.util.ArrayList;
 
 import static yaplstack.ast.AST.Factory.*;
 
@@ -388,7 +389,7 @@ public class Main {
             )
         ));*/
 
-        String sourceCode = "( )     ( ) ())() ";
+        String sourceCode = " ( 12)   )";
         InputStream sourceCodeInputStream = new ByteArrayInputStream(sourceCode.getBytes());
         Reader sourceCodeInputStreamReader = new InputStreamReader(sourceCodeInputStream);
 
@@ -440,13 +441,22 @@ public class Main {
 
             defun("tokens", new String[]{"chars"}, fn(new String[]{"m"}, block(
                 local("ch", literal(false)),
+                local("ch1", literal(false)),
+                local("atEnd", literal(false)),
+                local("atEnd1", literal(false)),
 
-                defun("consume", store("ch", send(load("chars"), "next"))),
+                test(not(send(load("chars"), "atEnd")), store("ch1", send(load("chars"), "next")), store("atEnd1", literal(true))),
+
+                defun("consume", block(
+                    store("ch", load("ch1")),
+                    store("atEnd", load("atEnd1")),
+                    test(not(send(load("chars"), "atEnd")), store("ch1", send(load("chars"), "next")), store("atEnd1", literal(true)))
+                )),
 
                 defun("ignore", block(
                     loop(
                         and(
-                            block(not(send(load("chars"), "atEnd"))),
+                            not(load("atEnd")),
                             invoke(Character.class.getMethod("isWhitespace", char.class), load("ch"))
                         ),
                         block(
@@ -457,16 +467,47 @@ public class Main {
 
                 call("consume"),
                 call("ignore"),
-                loop(not(send(load("chars"), "atEnd")), block(
-                    local("token", test(
+                loop(not(load("atEnd")), block(
+                    local("token", literal(false)),
+
+                    test(
                         eqc(load("ch"), literal('(')),
-                        object(field("type", literal("OPEN_PAR"))),
+                        block(
+                            store("token", object(field("type", literal("OPEN_PAR")))),
+                            call("consume")
+                        ),
                         test(
                             eqc(load("ch"), literal(')')),
-                            object(field("type", literal("CLOSE_PAR")))
+                            block(
+                                store("token", object(field("type", literal("CLOSE_PAR")))),
+                                call("consume")
+                            ),
+                            test(
+                                invoke(Character.class.getMethod("isDigit", char.class), load("ch")),
+                                block(
+                                    local("digits", newInstance(StringBuilder.class.getConstructor())),
+                                    invoke(load("digits"), StringBuilder.class.getMethod("append", char.class), load("ch")),
+                                    call("consume"),
+
+                                    loop(
+                                        and(
+                                            not(load("atEnd")),
+                                            invoke(Character.class.getMethod("isDigit", char.class), load("ch"))
+                                        ),
+                                        block(
+                                            invoke(load("digits"), StringBuilder.class.getMethod("append", char.class), load("ch")),
+                                            call("consume")
+                                        )
+                                    ),
+
+                                    store("token", object(
+                                        field("type", literal("INT")),
+                                        field("value", invoke(Integer.class.getMethod("parseInt", String.class), invoke(load("digits"), StringBuilder.class.getMethod("toString"))))
+                                    ))
+                                )
+                            )
                         )
-                    )),
-                    call("consume"),
+                    ),
 
                     send(load("m"), "yield", load("token")),
                     call("ignore")
