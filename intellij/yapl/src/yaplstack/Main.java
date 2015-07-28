@@ -389,7 +389,7 @@ public class Main {
             )
         ));*/
 
-        String sourceCode = " ( )";
+        String sourceCode = " (  34534 )";
         InputStream sourceCodeInputStream = new ByteArrayInputStream(sourceCode.getBytes());
         Reader sourceCodeInputStreamReader = new InputStreamReader(sourceCodeInputStream);
 
@@ -753,9 +753,9 @@ public class Main {
             ),
             load("x")
         ));*/
-        Instruction[] instructions = Generator.toInstructions(program);
+        CodeSegment codeSegment = Generator.toInstructions(program);
 
-        Thread thread = new Thread(new CallFrame(instructions));
+        Thread thread = new Thread(new CallFrame(codeSegment));
 
         /*Thread thread = new Thread(new CallFrame(new Instruction[] {
             loadEnvironment,
