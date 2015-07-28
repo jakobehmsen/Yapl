@@ -47,7 +47,7 @@ public interface Instruction {
         public static Instruction store(String name) {
             return thread -> {
                 int code = thread.symbolTable.getCode(name);
-                thread.callFrame.instructions[thread.callFrame.ip] = store(code);
+                thread.callFrame.codeSegment.instructions[thread.callFrame.ip] = store(code);
             };
         }
 
@@ -62,7 +62,7 @@ public interface Instruction {
         public static Instruction load(String name) {
             return thread -> {
                 int code = thread.symbolTable.getCode(name);
-                thread.callFrame.instructions[thread.callFrame.ip] = load(code);
+                thread.callFrame.codeSegment.instructions[thread.callFrame.ip] = load(code);
             };
         }
 
@@ -79,7 +79,7 @@ public interface Instruction {
         public static Instruction loadd(String name) {
             return thread -> {
                 int code = thread.symbolTable.getCode(name);
-                thread.callFrame.instructions[thread.callFrame.ip] = loadd(code);
+                thread.callFrame.codeSegment.instructions[thread.callFrame.ip] = loadd(code);
             };
         }
 
@@ -144,10 +144,10 @@ public interface Instruction {
 
         public static Instruction pushCallFrame(int pushCount) {
             return thread -> {
-                Instruction[] instructions = (Instruction[])thread.callFrame.pop();
-                if(instructions == null)
+                CodeSegment codeSegment = (CodeSegment)thread.callFrame.pop();
+                if(codeSegment == null)
                     throw new NullPointerException();
-                thread.callFrame = new CallFrame(thread.callFrame, instructions);
+                thread.callFrame = new CallFrame(thread.callFrame, codeSegment);
                 thread.callFrame.outer.pushTo(thread.callFrame, pushCount);
             };
         }

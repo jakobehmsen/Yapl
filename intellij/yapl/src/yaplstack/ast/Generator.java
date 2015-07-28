@@ -1,5 +1,6 @@
 package yaplstack.ast;
 
+import yaplstack.CodeSegment;
 import yaplstack.Instruction;
 
 import java.lang.reflect.Constructor;
@@ -170,8 +171,9 @@ public class Generator implements AST.Visitor<Void> {
                     generator.emit(Instruction.Factory.popCallFrame(1));
 
                     Instruction[] instructionArray = generator.generate();
+                    CodeSegment codeSegment = new CodeSegment(instructionArray, x);
 
-                    emit(Instruction.Factory.loadConst(instructionArray));
+                    emit(Instruction.Factory.loadConst(codeSegment));
 
                     if (bodyGenerator.context.isDependent)
                         dependentContexts.add(bodyGenerator.context);
@@ -414,9 +416,16 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitAnd(AST lhs, AST rhs) {
+        Object labelTestRhs = new Object();
+        Object labelEnd = new Object();
+
         visitAsExpression(lhs);
+        emitJumpIfTrue(labelTestRhs);
+        emit(Instruction.Factory.loadConst(false));
+        emitJump(labelEnd);
+        mark(labelTestRhs);
         visitAsExpression(rhs);
-        emit(Instruction.Factory.and);
+        mark(labelEnd);
 
         if(!asExpression)
             emit(Instruction.Factory.pop);
@@ -426,9 +435,17 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitOr(AST lhs, AST rhs) {
+        Object labelLoadTrue = new Object();
+        Object labelEnd = new Object();
+
         visitAsExpression(lhs);
+        emitJumpIfTrue(labelLoadTrue);
         visitAsExpression(rhs);
-        emit(Instruction.Factory.or);
+        emitJump(labelEnd);
+
+        mark(labelLoadTrue);
+        emit(Instruction.Factory.loadConst(true));
+        mark(labelEnd);
 
         if(!asExpression)
             emit(Instruction.Factory.pop);
@@ -694,15 +711,16 @@ public class Generator implements AST.Visitor<Void> {
         stagedInstructions.add(generator);
     }
 
-    public static Instruction[] toInstructions(AST code) {
+    public static CodeSegment toInstructions(AST code) {
         return toInstructions(code, g -> { }, g -> { });
     }
 
-    private static Instruction[] toInstructions(AST code, Consumer<Generator> pre, Consumer<Generator> post) {
+    private static CodeSegment toInstructions(AST code, Consumer<Generator> pre, Consumer<Generator> post) {
         Generator generator = new Generator(true);
         pre.accept(generator);
         code.accept(generator);
         post.accept(generator);
-        return generator.generate();
+        Instruction[] instructions = generator.generate();
+        return new CodeSegment(instructions, code);
     }
 }

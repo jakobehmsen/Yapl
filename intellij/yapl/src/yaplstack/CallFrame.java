@@ -5,19 +5,20 @@ import java.util.stream.Collectors;
 
 public class CallFrame {
     public CallFrame outer;
-    public final Instruction[] instructions;
+    //public final Instruction[] instructions; // Use a pair of an instruction array along with its source (AST/Node)
+    public final CodeSegment codeSegment;
     public int ip;
     public Stack<Object> stack = new Stack<>();
 
-    public CallFrame(Instruction[] instructions) {
+    public CallFrame(CodeSegment codeSegment) {
         push(new Environment());
-        this.instructions = instructions;
+        this.codeSegment = codeSegment;
     }
 
-    public CallFrame(CallFrame outer, Instruction[] instructions) {
+    public CallFrame(CallFrame outer, CodeSegment codeSegment) {
         this.outer = outer;
-        this.instructions = instructions;
-        if(instructions == null)
+        this.codeSegment = codeSegment;
+        if(codeSegment == null)
             new String();
     }
 

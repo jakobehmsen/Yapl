@@ -4,10 +4,12 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public interface AST {
+public interface AST extends Node {
     <T> T accept(Visitor<T> visitor);
 
     interface Visitor<T> {
@@ -56,6 +58,16 @@ public interface AST {
         public static AST program(AST code) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "program";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(code);
+                }
+
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitProgram(code);
                 }
@@ -64,6 +76,16 @@ public interface AST {
 
         public static AST block(AST... code) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "block";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(code);
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitBlock(Arrays.asList(code));
@@ -80,7 +102,22 @@ public interface AST {
         }
 
         public static Slot field(String name, AST value) {
-            return visitor -> visitor.visitField(name, value);
+            return new Slot() {
+                @Override
+                public String getName() {
+                    return "method";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(new Node.Atom(name), value);
+                }
+
+                @Override
+                public void accept(Visitor visitor) {
+                    visitor.visitField(name, value);
+                }
+            };
         }
 
         public static Slot method(String name, AST body) {
@@ -88,11 +125,36 @@ public interface AST {
         }
 
         public static Slot method(String name, String[] parameters, AST body) {
-            return visitor -> visitor.visitMethod(name, Arrays.asList(parameters), body);
+            return new Slot() {
+                @Override
+                public String getName() {
+                    return "method";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(new Node.Atom(name), new Node.Atom(parameters), body);
+                }
+
+                @Override
+                public void accept(Visitor visitor) {
+                    visitor.visitMethod(name, Arrays.asList(parameters), body);
+                }
+            };
         }
 
         public static AST object(Slot... slots) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "object";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(slots);
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitObject(Arrays.asList(slots));
@@ -103,6 +165,19 @@ public interface AST {
         public static AST send(AST target, String name, AST... arguments) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "send";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Stream.concat(
+                        Arrays.asList(target, new Node.Atom(name)).stream(),
+                        Arrays.asList(arguments).stream()
+                    ).collect(Collectors.toList());
+                }
+
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitSend(target, name, Arrays.asList(arguments));
                 }
@@ -111,6 +186,16 @@ public interface AST {
 
         public static AST env() {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "env";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Collections.emptyList();
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitEnv();
@@ -131,6 +216,16 @@ public interface AST {
         public static AST local(AST target, String name, AST value) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "local";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(target, new Node.Atom(name), value);
+                }
+
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitLocal(target, name, value);
                 }
@@ -139,6 +234,16 @@ public interface AST {
 
         public static AST local(String name, AST value) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "local";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(new Node.Atom(name), value);
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitLocal(name, value);
@@ -149,6 +254,15 @@ public interface AST {
         public static AST store(String name, AST value) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "store";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(new Node.Atom(name), value);
+                }
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitStore(name, value);
                 }
@@ -157,6 +271,15 @@ public interface AST {
 
         public static AST store(AST target, String name, AST value) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "store";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(target, new Node.Atom(name), value);
+                }
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitStore(target, name, value);
@@ -167,6 +290,15 @@ public interface AST {
         public static AST loadd(String name) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "loadd";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(new Node.Atom(name));
+                }
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitLoadD(name);
                 }
@@ -176,6 +308,15 @@ public interface AST {
         public static AST load(String name) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "name";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(new Node.Atom(name));
+                }
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitLoad(name);
                 }
@@ -184,6 +325,16 @@ public interface AST {
 
         public static AST load(AST target, String name) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "local";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(target, new Node.Atom(name));
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitLoad(target, name);
@@ -205,6 +356,16 @@ public interface AST {
 
         public static AST bp = new AST() {
             @Override
+            public String getName() {
+                return "bp";
+            }
+
+            @Override
+            public List<Node> getChildren() {
+                return Collections.emptyList();
+            }
+
+            @Override
             public <T> T accept(Visitor<T> visitor) {
                 return visitor.visitBP();
             }
@@ -212,6 +373,16 @@ public interface AST {
 
         public static AST resume(AST target, AST value) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "resume";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(target, value);
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitResume(target, value);
@@ -221,6 +392,16 @@ public interface AST {
 
         public static AST frame = new AST() {
             @Override
+            public String getName() {
+                return "frame";
+            }
+
+            @Override
+            public List<Node> getChildren() {
+                return Collections.emptyList();
+            }
+
+            @Override
             public <T> T accept(Visitor<T> visitor) {
                 return visitor.visitFrame();
             }
@@ -228,6 +409,16 @@ public interface AST {
 
         public static AST ret(AST expression) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "ret";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(expression);
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitRet(expression);
@@ -238,6 +429,16 @@ public interface AST {
 
         public static AST applycc(AST target) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "applycc";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(target);
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitApplyCC(target);
@@ -252,6 +453,16 @@ public interface AST {
         public static AST test(AST condition, AST ifTrue, AST ifFalse) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "test";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(condition, ifTrue, ifFalse);
+                }
+
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitTest(condition, ifTrue, ifFalse);
                 }
@@ -260,6 +471,16 @@ public interface AST {
 
         public static AST loop(AST condition, AST body) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "loop";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(condition, body);
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitLoop(condition, body);
@@ -270,6 +491,16 @@ public interface AST {
         public static AST literal(Object obj) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "literal";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(new Node.Atom(obj));
+                }
+
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitLiteral(obj);
                 }
@@ -278,6 +509,18 @@ public interface AST {
 
         public static AST newInstance(Constructor constructor, AST... args) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "newInstance";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Stream.concat(
+                        Arrays.asList(new Node.Atom(constructor)).stream(),
+                        Arrays.asList(args).stream()).collect(Collectors.toList());
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitNewInstance(constructor, Arrays.asList(args));
@@ -288,6 +531,18 @@ public interface AST {
         public static AST invoke(Method method, AST... args) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "invoke";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Stream.concat(
+                        Arrays.asList(new Node.Atom(method)).stream(),
+                        Arrays.asList(args).stream()).collect(Collectors.toList());
+                }
+
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitInvoke(method, Arrays.asList(args));
                 }
@@ -296,6 +551,18 @@ public interface AST {
 
         public static AST invoke(AST target, Method method, AST... args) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "invoke";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Stream.concat(
+                        Arrays.asList(target, new Node.Atom(method)).stream(),
+                        Arrays.asList(args).stream()).collect(Collectors.toList());
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitInvoke(target, method, Arrays.asList(args));
@@ -306,6 +573,16 @@ public interface AST {
         public static AST fieldGet(Field field) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "fieldGet";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(new Node.Atom(field));
+                }
+
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitFieldGet(field);
                 }
@@ -314,6 +591,16 @@ public interface AST {
 
         public static AST fieldGet(AST target, Field field) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "fieldGet";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(target, new Node.Atom(field));
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitFieldGet(target, field);
@@ -324,6 +611,16 @@ public interface AST {
         public static AST fieldSet(Field field, AST value) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "fieldGet";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(new Node.Atom(field), value);
+                }
+
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitFieldSet(field, value);
                 }
@@ -332,6 +629,16 @@ public interface AST {
 
         public static AST fieldSet(AST target, Field field, AST value) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "fieldSet";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(target, new Node.Atom(field), value);
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitFieldSet(target, field, value);
@@ -342,6 +649,16 @@ public interface AST {
         public static AST addi(AST lhs, AST rhs) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "addi";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(lhs, rhs);
+                }
+
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitAddi(lhs, rhs);
                 }
@@ -350,6 +667,16 @@ public interface AST {
 
         public static AST subi(AST lhs, AST rhs) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "subi";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(lhs, rhs);
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitSubi(lhs, rhs);
@@ -360,6 +687,16 @@ public interface AST {
         public static AST muli(AST lhs, AST rhs) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "muli";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(lhs, rhs);
+                }
+
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitMuli(lhs, rhs);
                 }
@@ -368,6 +705,16 @@ public interface AST {
 
         public static AST divi(AST lhs, AST rhs) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "divi";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(lhs, rhs);
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitDivi(lhs, rhs);
@@ -378,6 +725,16 @@ public interface AST {
         public static AST lti(AST lhs, AST rhs) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "lti";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(lhs, rhs);
+                }
+
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitLti(lhs, rhs);
                 }
@@ -387,6 +744,16 @@ public interface AST {
         public static AST gti(AST lhs, AST rhs) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "gti";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(lhs, rhs);
+                }
+
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitGti(lhs, rhs);
                 }
@@ -395,6 +762,16 @@ public interface AST {
 
         public static AST eqi(AST lhs, AST rhs) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "eqi";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(lhs, rhs);
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitEqi(lhs, rhs);
@@ -415,6 +792,16 @@ public interface AST {
         public static AST eqc(AST lhs, AST rhs) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "eqc";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(lhs, rhs);
+                }
+
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitEqc(lhs, rhs);
                 }
@@ -423,6 +810,16 @@ public interface AST {
 
         public static AST itoc(AST i) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "itoc";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(i);
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitItoc(i);
@@ -433,6 +830,16 @@ public interface AST {
         public static AST not(AST expression) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "not";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(expression);
+                }
+
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitNot(expression);
                 }
@@ -442,6 +849,16 @@ public interface AST {
         public static AST and(AST lhs, AST rhs) {
             return new AST() {
                 @Override
+                public String getName() {
+                    return "and";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(lhs, rhs);
+                }
+
+                @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitAnd(lhs, rhs);
                 }
@@ -450,6 +867,16 @@ public interface AST {
 
         public static AST or(AST lhs, AST rhs) {
             return new AST() {
+                @Override
+                public String getName() {
+                    return "or";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(lhs, rhs);
+                }
+
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitOr(lhs, rhs);

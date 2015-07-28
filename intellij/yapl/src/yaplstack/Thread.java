@@ -12,13 +12,13 @@ public class Thread {
     public Thread evalAll() {
         try {
             while (!finished)
-                callFrame.instructions[callFrame.ip].eval(this);
+                callFrame.codeSegment.instructions[callFrame.ip].eval(this);
         } catch (Throwable e) {
             e.toString();
             e.printStackTrace();
             callFrame.ip--;
-            callFrame.instructions[callFrame.ip].eval(this);
-            callFrame.instructions[callFrame.ip].eval(this);
+            callFrame.codeSegment.instructions[callFrame.ip].eval(this);
+            callFrame.codeSegment.instructions[callFrame.ip].eval(this);
         }
 
         return this;
