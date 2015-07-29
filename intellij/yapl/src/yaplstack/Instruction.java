@@ -229,7 +229,7 @@ public interface Instruction {
 
             return thread -> {
                 Method m = method;
-                if(method.getName().equals("isWhitespace"))
+                if(method.getName().equals("append"))
                     new String();
 
                 int argCount = method.getParameterCount();
@@ -247,6 +247,8 @@ public interface Instruction {
                 } catch (InvocationTargetException e) {
                     e.printStackTrace();
                 } catch(IllegalArgumentException e) {
+                    e.printStackTrace();
+                } catch(NullPointerException e) {
                     e.printStackTrace();
                 }
 
