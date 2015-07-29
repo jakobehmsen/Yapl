@@ -389,7 +389,7 @@ public class Main {
             )
         ));*/
 
-        String sourceCode = " (  34534 )";
+        String sourceCode = " (  34534 ) \"str\" ";
         InputStream sourceCodeInputStream = new ByteArrayInputStream(sourceCode.getBytes());
         Reader sourceCodeInputStreamReader = new InputStreamReader(sourceCodeInputStream);
 
@@ -455,45 +455,17 @@ public class Main {
             )),
 
             defun("chars", new String[]{"reader"}, fn(new String[]{"m"}, block(
-                local("b", literal(0)),
-                loop(
-                    not(eqi(store("b", invoke(load("reader"), Reader.class.getMethod("read"))), literal(-1))),
-                    block(
-                        local("ch", load("b")),
-                        send(load("m"), "yield", itoc(load("ch")))
-                    )
-                )))
+                    local("b", literal(0)),
+                    loop(
+                        not(eqi(store("b", invoke(load("reader"), Reader.class.getMethod("read"))), literal(-1))),
+                        block(
+                            local("ch", load("b")),
+                            send(load("m"), "yield", itoc(load("ch")))
+                        )
+                    )))
             ),
 
             defun("tokens", new String[]{"chars"}, fn(new String[]{"m"}, block(
-                /*local("ch", literal(false)),
-                local("ch1", literal(false)),
-                local("atEnd", literal(false)),
-                local("atEnd1", literal(false)),
-
-                test(not(send(load("chars"), "atEnd")), store("ch1", send(load("chars"), "next")), store("atEnd1", literal(true))),
-
-                defun("consume", block(
-                    store("ch", load("ch1")),
-                    store("atEnd", load("atEnd1")),
-                    test(not(send(load("chars"), "atEnd")), store("ch1", send(load("chars"), "next")), store("atEnd1", literal(true)))
-                )),
-
-                defun("ignore", block(
-                    loop(
-                        and(
-                            not(load("atEnd")),
-                            invoke(Character.class.getMethod("isWhitespace", char.class), load("ch"))
-                        ),
-                        block(
-                            call("consume")
-                        )
-                    )
-                )),
-
-                call("consume"),
-                call("ignore"),*/
-
                 defun("ignore", block(
                     loop(
                         and(
@@ -524,27 +496,55 @@ public class Main {
                                 send(load("chars"), "consume")
                             ),
                             test(
-                                invoke(Character.class.getMethod("isDigit", char.class), send(load("chars"), "peek")),
+                                eqc(send(load("chars"), "peek"), literal('\"')),
                                 block(
-                                    local("digits", newInstance(StringBuilder.class.getConstructor())),
-                                    invoke(load("digits"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
+                                    send(load("chars"), "consume"),
+
+                                    local("stringBuilder", newInstance(StringBuilder.class.getConstructor())),
+                                    invoke(load("stringBuilder"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
                                     send(load("chars"), "consume"),
 
                                     loop(
                                         and(
                                             not(send(load("chars"), "atEnd")),
-                                            invoke(Character.class.getMethod("isDigit", char.class), send(load("chars"), "peek"))
+                                            not(eqc(send(load("chars"), "peek"), literal('\"')))
                                         ),
                                         block(
-                                            invoke(load("digits"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
+                                            invoke(load("stringBuilder"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
                                             send(load("chars"), "consume")
                                         )
                                     ),
 
+                                    send(load("chars"), "consume"),
+
                                     store("token", object(
-                                        field("type", literal("INT")),
-                                        field("value", invoke(Integer.class.getMethod("parseInt", String.class), invoke(load("digits"), StringBuilder.class.getMethod("toString"))))
+                                        field("type", literal("STRING")),
+                                        field("value", invoke(load("stringBuilder"), StringBuilder.class.getMethod("toString")))
                                     ))
+                                ),
+                                test(
+                                    invoke(Character.class.getMethod("isDigit", char.class), send(load("chars"), "peek")),
+                                    block(
+                                        local("digits", newInstance(StringBuilder.class.getConstructor())),
+                                        invoke(load("digits"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
+                                        send(load("chars"), "consume"),
+
+                                        loop(
+                                            and(
+                                                not(send(load("chars"), "atEnd")),
+                                                invoke(Character.class.getMethod("isDigit", char.class), send(load("chars"), "peek"))
+                                            ),
+                                            block(
+                                                invoke(load("digits"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
+                                                send(load("chars"), "consume")
+                                            )
+                                        ),
+
+                                        store("token", object(
+                                            field("type", literal("INT")),
+                                            field("value", invoke(Integer.class.getMethod("parseInt", String.class), invoke(load("digits"), StringBuilder.class.getMethod("toString"))))
+                                        ))
+                                    )
                                 )
                             )
                         )
@@ -555,26 +555,12 @@ public class Main {
                 ))
             ))),
 
-            /*local("charsGen", call("generate", call("chars", literal(sourceCodeInputStreamReader)))),
-            local("tokensGen", call("generate", call("tokens", load("charsGen")))),
-
-            loop(not(send(load("tokensGen"), "atEnd")), block(
-                call("println", send(load("tokensGen"), "next"))
-            ))*/
-
             local("charsGen", call("buffer", call("generate", call("chars", literal(sourceCodeInputStreamReader))))),
             local("tokensGen", call("generate", call("tokens", load("charsGen")))),
 
             loop(not(send(load("tokensGen"), "atEnd")), block(
                 call("println", send(load("tokensGen"), "next"))
             ))
-
-            /*local("charsGen", call("buffer", call("generate", call("chars", literal(sourceCodeInputStreamReader))))),
-
-            loop(not(send(load("charsGen"), "atEnd")), block(
-                call("println", send(load("charsGen"), "peek")),
-                send(load("charsGen"), "consume")
-            ))*/
         ));
 
         /*AST program = program(block(
