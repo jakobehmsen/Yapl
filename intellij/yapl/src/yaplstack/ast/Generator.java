@@ -542,7 +542,10 @@ public class Generator implements AST.Visitor<Void> {
     @Override
     public Void visitLocal(String name, AST value) {
         if(functionScope) {
-            int localOrdinal = context.locals.size();
+            int currentLocalOrdinal = context.locals.indexOf(name);
+            int localOrdinal = currentLocalOrdinal == -1
+                ? context.locals.size() // New local slot
+                : currentLocalOrdinal; // Reuse local slot
             context.locals.add(name);
             visitAsExpression(value);
             if (asExpression)
