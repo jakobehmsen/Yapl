@@ -389,7 +389,7 @@ public class Main {
             )
         ));*/
 
-        String sourceCode = " (  34534 ) \"str\" ";
+        String sourceCode = " (word  34534 ) \"str\" ";
         InputStream sourceCodeInputStream = new ByteArrayInputStream(sourceCode.getBytes());
         Reader sourceCodeInputStreamReader = new InputStreamReader(sourceCodeInputStream);
 
@@ -501,6 +501,7 @@ public class Main {
                                     send(load("chars"), "consume"),
 
                                     local("stringBuilder", newInstance(StringBuilder.class.getConstructor())),
+                                    bp,
                                     invoke(load("stringBuilder"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
                                     send(load("chars"), "consume"),
 
@@ -544,6 +545,30 @@ public class Main {
                                             field("type", literal("INT")),
                                             field("value", invoke(Integer.class.getMethod("parseInt", String.class), invoke(load("digits"), StringBuilder.class.getMethod("toString"))))
                                         ))
+                                    ),
+                                    test(
+                                        invoke(Character.class.getMethod("isJavaIdentifierStart", char.class), send(load("chars"), "peek")),
+                                        block(
+                                            local("stringBuilder", newInstance(StringBuilder.class.getConstructor())),
+                                            invoke(load("stringBuilder"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
+                                            send(load("chars"), "consume"),
+
+                                            loop(
+                                                and(
+                                                    not(send(load("chars"), "atEnd")),
+                                                    invoke(Character.class.getMethod("isJavaIdentifierPart", char.class), send(load("chars"), "peek"))
+                                                ),
+                                                block(
+                                                    invoke(load("stringBuilder"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
+                                                    send(load("chars"), "consume")
+                                                )
+                                            ),
+
+                                            store("token", object(
+                                                field("type", literal("WORD")),
+                                                field("value", invoke(load("stringBuilder"), StringBuilder.class.getMethod("toString")))
+                                            ))
+                                        )
                                     )
                                 )
                             )
