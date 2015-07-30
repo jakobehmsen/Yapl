@@ -197,10 +197,10 @@ public interface Instruction {
             };
         }
 
-        public static Instruction finish = new Instruction() {
+        public static Instruction halt = new Instruction() {
             @Override
             public void eval(Thread thread) {
-                thread.setFinished();
+                thread.halt();
             }
 
             @Override
@@ -220,7 +220,7 @@ public interface Instruction {
 
             @Override
             public String toString() {
-                return "finish";
+                return "halt";
             }
         };
 

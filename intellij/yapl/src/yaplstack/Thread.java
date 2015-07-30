@@ -3,7 +3,7 @@ package yaplstack;
 public class Thread {
     public SymbolTable symbolTable = new SymbolTable();
     public CallFrame callFrame;
-    private boolean finished;
+    private boolean run;
 
     public Thread(CallFrame callFrame) {
         this.callFrame = callFrame;
@@ -11,7 +11,8 @@ public class Thread {
 
     public Thread evalAll() {
         try {
-            while (!finished)
+            run = true;
+            while (run)
                 callFrame.codeSegment.instructions[callFrame.ip].eval(this);
         } catch (Throwable e) {
             e.toString();
@@ -24,8 +25,8 @@ public class Thread {
         return this;
     }
 
-    public void setFinished() {
-        finished = true;
+    public void halt() {
+        run = false;
     }
 
     @Override

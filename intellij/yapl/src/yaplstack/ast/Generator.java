@@ -79,7 +79,7 @@ public class Generator implements AST.Visitor<Void> {
     @Override
     public Void visitProgram(AST code) {
         code.accept(this);
-        emit(Instruction.Factory.finish);
+        emit(Instruction.Factory.halt);
 
         return null;
     }
