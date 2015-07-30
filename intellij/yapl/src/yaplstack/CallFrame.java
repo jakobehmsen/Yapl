@@ -1,83 +1,83 @@
 package yaplstack;
 
+import java.util.Arrays;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
 public class CallFrame {
     public CallFrame outer;
-    //public final Instruction[] instructions; // Use a pair of an instruction array along with its source (AST/Node)
     public final CodeSegment codeSegment;
     public int ip;
-    public Stack<Object> stack = new Stack<>();
+    private Object[] stackArray;
+    private int stackSize;
 
     public CallFrame(CodeSegment codeSegment) {
-        push(new Environment());
         this.codeSegment = codeSegment;
+        stackArray = new Object[1 + codeSegment.maxStackSize];
+
+        push(new Environment());
     }
 
     public CallFrame(CallFrame outer, CodeSegment codeSegment) {
         this.outer = outer;
         this.codeSegment = codeSegment;
-        if(codeSegment == null)
-            new String();
+
+        stackArray = new Object[codeSegment.maxStackSize];
     }
 
-    public void incrementIP() {
+    public final void incrementIP() {
         ip++;
     }
 
-    public void setIP(int index) {
+    public final void setIP(int index) {
         ip = index;
     }
 
-    public void push(Object obj) {
-        stack.push(obj);
+    public final void push(Object obj) {
+        stackArray[stackSize] = obj;
+        stackSize++;
     }
 
-    public Object pop() {
-        return stack.pop();
+    public final Object pop() {
+        stackSize--;
+        return stackArray[stackSize];
     }
 
-    public void dup() {
-        stack.push(stack.peek());
+    public final void dup() {
+        stackArray[stackSize] = stackArray[stackSize - 1];
+        stackSize++;
     }
 
-    public void dupx1down() {
-        stack.add(stack.size() - 2, stack.peek());
+    public final void dupx1down() {
+        Object tmp = stackArray[stackSize - 1];
+        stackArray[stackSize] = stackArray[stackSize - 1];
+        stackArray[stackSize - 1] = stackArray[stackSize - 2];
+        stackArray[stackSize - 2] = tmp;
+        stackSize++;
     }
 
-    public void dupx(int delta) {
-        // From delta, dup to top
-        stack.push(stack.get(stack.size() - delta - 1));
+    public final void dupx(int delta) {
+        stackArray[stackSize] = stackArray[stackSize - delta - 1];
+        stackSize++;
     }
 
-    public void pushTo(CallFrame callFrame, int pushCount) {
-        for(int i = pushCount - 1; i >= 0; i--)
-            callFrame.stack.push(stack.get(stack.size() - i - 1));
-        for(int i = 0; i < pushCount; i++)
-            pop();
+    public final void pushTo(CallFrame callFrame, int pushCount) {
+        System.arraycopy(this.stackArray, stackSize - pushCount, callFrame.stackArray, callFrame.stackSize, pushCount);
+        callFrame.stackSize += pushCount;
+        Arrays.fill(this.stackArray, stackSize - pushCount, stackSize, null);
+        stackSize -= pushCount;
     }
 
-    public void swap() {
-        Object tmp = stack.pop();
-        stack.add(stack.size() - 1, tmp);
+    public final Object get(int ordinal) {
+        return stackArray[ordinal];
     }
 
-    public void swapx(int delta) {
-        Object tmp = stack.pop();
-        stack.add(stack.size() - delta, tmp);
-    }
-
-    public Object get(int ordinal) {
-        return stack.get(ordinal);
-    }
-
-    public void set(int ordinal, Object value) {
-        stack.set(ordinal, value);
+    public final void set(int ordinal, Object value) {
+        stackArray[ordinal] = value;
     }
 
     public String toString(Thread thread) {
-        return stack.stream().map(x ->
+        return Arrays.asList(stackArray).stream().map(x ->
             x instanceof Environment ? ((Environment)x).toString(thread) : x != null ? x.toString() : "null"
         ).collect(Collectors.toList()).toString();
     }

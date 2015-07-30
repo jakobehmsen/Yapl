@@ -389,7 +389,43 @@ public class Main {
             )
         ));*/
 
-        String sourceCode = " (word  34534 ) \"str\" ";
+        /*AST program = program(block(
+            local("i", literal(0)),
+            loop(
+                lti(load("i"), literal(10)),
+                store("i", addi(load("i"), literal(1)))
+            )
+        ));*/
+
+
+
+        String sourceCode =
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n";
         InputStream sourceCodeInputStream = new ByteArrayInputStream(sourceCode.getBytes());
         Reader sourceCodeInputStreamReader = new InputStreamReader(sourceCodeInputStream);
 
@@ -501,7 +537,6 @@ public class Main {
                                     send(load("chars"), "consume"),
 
                                     local("stringBuilder", newInstance(StringBuilder.class.getConstructor())),
-                                    bp,
                                     invoke(load("stringBuilder"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
                                     send(load("chars"), "consume"),
 
@@ -587,6 +622,8 @@ public class Main {
                 call("println", send(load("tokensGen"), "next"))
             ))
         ));
+
+
 
         /*AST program = program(block(
             defun("println", new String[]{"str"},
@@ -839,7 +876,10 @@ public class Main {
             visitApply,
             finish
         }));*/
+        long start = System.currentTimeMillis();
         thread.evalAll();
+        long end = System.currentTimeMillis();
+        System.out.println("Elapsed: " + (end - start) + "ms");
         Object result = thread.callFrame.pop();
 
         System.out.println(result);

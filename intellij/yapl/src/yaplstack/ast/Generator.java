@@ -171,7 +171,8 @@ public class Generator implements AST.Visitor<Void> {
                     generator.emit(Instruction.Factory.popCallFrame(1));
 
                     Instruction[] instructionArray = generator.generate();
-                    CodeSegment codeSegment = new CodeSegment(instructionArray, x);
+                    int maxStackSize = maxStackSize(1 /*self*/ + params.size(), instructionArray, 0);
+                    CodeSegment codeSegment = new CodeSegment(maxStackSize, instructionArray, x);
 
                     emit(Instruction.Factory.loadConst(codeSegment));
 
@@ -224,7 +225,7 @@ public class Generator implements AST.Visitor<Void> {
         emitJump(labelEnd);
 
         mark(labelBody);
-        body.accept(this);
+        visitAsStatement(body);
         emitJump(labelStart);
 
         mark(labelEnd);
@@ -582,18 +583,18 @@ public class Generator implements AST.Visitor<Void> {
         context.emit(name, new MetaFrame.InstructionGenerator() {
             @Override
             public void emitForFrame(int distance, MetaFrame target, int ordinal) {
-                if(distance == 0) {
+                if (distance == 0) {
                     visitAsExpression(value);
                     if (asExpression)
                         emit(Instruction.Factory.dup);
                     emit(Instruction.Factory.storeVar(ordinal));
-                } else if(distance > 0) {
+                } else if (distance > 0) {
                     emit(Instruction.Factory.loadVar(0));
                     emit(Instruction.Factory.load("__frame__"));
 
                     MetaFrame current = context;
 
-                    for(int i = 1; i < distance; i++) {
+                    for (int i = 1; i < distance; i++) {
                         current.isDependent = true;
                         current = current.context;
                         emit(Instruction.Factory.frameLoadVar(0));
@@ -642,15 +643,15 @@ public class Generator implements AST.Visitor<Void> {
             context.emit(name, new MetaFrame.InstructionGenerator() {
                 @Override
                 public void emitForFrame(int distance, MetaFrame target, int ordinal) {
-                    if(distance == 0) {
+                    if (distance == 0) {
                         emit(Instruction.Factory.loadVar(ordinal));
-                    } else if(distance > 0) {
+                    } else if (distance > 0) {
                         emit(Instruction.Factory.loadVar(0));
                         emit(Instruction.Factory.load("__frame__"));
 
                         MetaFrame current = context;
 
-                        for(int i = 1; i < distance; i++) {
+                        for (int i = 1; i < distance; i++) {
                             current.isDependent = true;
                             current = current.context;
                             emit(Instruction.Factory.frameLoadVar(0));
@@ -724,6 +725,54 @@ public class Generator implements AST.Visitor<Void> {
         code.accept(generator);
         post.accept(generator);
         Instruction[] instructions = generator.generate();
-        return new CodeSegment(instructions, code);
+        int maxStackSize = maxStackSize(generator.context.locals.size(), instructions, 0);
+        return new CodeSegment(maxStackSize, instructions, code);
+    }
+
+    private static int maxStackSize(int size, Instruction[] instructions, int ip) {
+        return maxStackSize(size, size, instructions, ip);
+    }
+
+    private static int maxStackSize(int size, int maxSize, Instruction[] instructions, int ip) {
+        while(true) {
+            Instruction instruction = instructions[ip];
+
+            size += instruction.pushCount() - instruction.popCount();
+            maxSize = Math.max(size, maxSize);
+
+            int[] nextIPs = instruction.nextIPs(ip);
+
+            if(nextIPs.length == 0) {
+                // Halt/ret/pop frame
+                break;
+            } else if(nextIPs.length == 1) {
+                int nextIP = nextIPs[0];
+                if(nextIP < ip)
+                    // Loop
+                    break;
+
+                ip = nextIP;
+            } else if(nextIPs.length == 2) {
+                // Branch
+                int ipA = nextIPs[0];
+                int ipB = nextIPs[1];
+
+                if(ipA > ip && ipB > ip) {
+                    return Math.max(
+                        maxStackSize(size, maxSize, instructions, ipA),
+                        maxStackSize(size, maxSize, instructions, ipB)
+                    );
+                } else {
+                    int maxIP = Math.max(ipA, ipB);
+
+                    if(maxIP > 0)
+                        return maxStackSize(size, maxSize, instructions, maxIP);
+                    else
+                        break;
+                }
+            }
+        }
+
+        return maxSize;
     }
 }
