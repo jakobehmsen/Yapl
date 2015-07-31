@@ -2,6 +2,7 @@ package yaplstack.ast;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,6 +56,24 @@ public interface AST extends Node {
     }
 
     class Factory {
+        public static AST parseOperation(String operator, List<AST> operands) {
+            Object[] arguments = operands.stream().toArray(s -> new Object[s]);
+            Class<?>[] parameterTypes = operands.stream().map(x -> AST.class).toArray(s -> new Class<?>[s]);
+            try {
+                Method method = Factory.class.getMethod(operator, parameterTypes);
+                try {
+                    return (AST)method.invoke(null, arguments);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                } catch (InvocationTargetException e) {
+                    e.printStackTrace();
+                }
+            } catch (NoSuchMethodException e) {
+                // Call method
+            }
+            return null;
+        }
+
         public static AST program(AST code) {
             return new AST() {
                 @Override

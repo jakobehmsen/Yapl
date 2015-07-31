@@ -110,21 +110,35 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitSend(AST target, String name, List<AST> arguments) {
-        visitAsExpression(target);
+        boolean useSpecial = false;
 
-        if(arguments.size() > 0) {
-            arguments.forEach(x -> visitAsExpression(x));
-            emit(Instruction.Factory.dupx(arguments.size()));
+        if(!useSpecial) {
+            visitAsExpression(target);
+
+            if (arguments.size() > 0) {
+                arguments.forEach(x -> visitAsExpression(x));
+                emit(Instruction.Factory.dupx(arguments.size()));
+            } else {
+                emit(Instruction.Factory.dup);
+            }
+
+            emit(Instruction.Factory.load(Selector.get(name, arguments.size())));
+
+            emit(Instruction.Factory.pushCallFrame(1 + arguments.size()));
+
+            if (!asExpression)
+                emit(Instruction.Factory.pop);
         } else {
-            emit(Instruction.Factory.dup);
+            visitAsExpression(target);
+            arguments.forEach(x -> visitAsExpression(x));
+            emit(Instruction.Factory.send(name, arguments.size()));
+
+            // A pop could be avoided by having dual methods with similar selectors:
+            // One of the selectors is used for methods as expression
+            // The other selector is used for methods as statements
+            if(!asExpression)
+                emit(Instruction.Factory.pop);
         }
-
-        emit(Instruction.Factory.load(Selector.get(name, arguments.size())));
-
-        emit(Instruction.Factory.pushCallFrame(1 + arguments.size()));
-
-        if(!asExpression)
-            emit(Instruction.Factory.pop);
 
         return null;
     }

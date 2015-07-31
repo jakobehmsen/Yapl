@@ -1,5 +1,7 @@
 package yaplstack;
 
+import yaplstack.ast.Selector;
+
 import java.lang.reflect.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -554,6 +556,62 @@ public interface Instruction {
                 return "loadCallFrame";
             }
         };
+
+        public static Instruction send(String name, int arity) {
+            return new Instruction() {
+                @Override
+                public void eval(Thread thread) {
+                    String selector = Selector.get(name, arity);
+                    int code = thread.symbolTable.getCode(selector);
+                    thread.callFrame.codeSegment.instructions[thread.callFrame.ip] = send(code, arity);
+                }
+
+                @Override
+                public int popCount() {
+                    return 1 /*self*/ + arity;
+                }
+
+                @Override
+                public int pushCount() {
+                    return 1;
+                }
+
+                @Override
+                public int[] nextIPs(int ip) {
+                    return new int[]{ip + 1};
+                }
+            };
+        }
+
+        public static Instruction send(int code, int arity) {
+            int argCount = arity + 1;
+
+            return new Instruction() {
+                @Override
+                public void eval(Thread thread) {
+                    Environment target = (Environment)thread.callFrame.peek(arity);
+                    CodeSegment codeSegment = (CodeSegment)target.load(code);
+                    CallFrame frame = new CallFrame(thread.callFrame, codeSegment);
+                    thread.callFrame.pushTo(frame, argCount);
+                    thread.callFrame = frame;
+                }
+
+                @Override
+                public int popCount() {
+                    return arity;
+                }
+
+                @Override
+                public int pushCount() {
+                    return 1;
+                }
+
+                @Override
+                public int[] nextIPs(int ip) {
+                    return new int[]{ip + 1};
+                }
+            };
+        }
 
         // Special send instruction?
         public static Instruction pushCallFrame(int pushCount) {

@@ -72,6 +72,10 @@ public class CallFrame {
         return stackArray[ordinal];
     }
 
+    public final Object peek(int delta) {
+        return stackArray[stackSize - 1 - delta];
+    }
+
     public final void set(int ordinal, Object value) {
         stackArray[ordinal] = value;
     }

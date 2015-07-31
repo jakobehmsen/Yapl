@@ -5,11 +5,12 @@ import yaplstack.ast.Generator;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
 
 import static yaplstack.ast.AST.Factory.*;
 
 public class Main {
-    public static void main(String[] args) throws NoSuchMethodException, NoSuchFieldException {
+    public static void main(String[] args) throws Exception {
         /*
         What primivites are necessary to simulate tradition fn calls?
 
@@ -399,7 +400,7 @@ public class Main {
 
 
 
-        String sourceCode =
+        /*String sourceCode =
             " (word  34534 ) \"str\" \n" +
             " (word  34534 ) \"str\" \n" +
             " (word  34534 ) \"str\" \n" +
@@ -621,7 +622,7 @@ public class Main {
             loop(not(send(load("tokensGen"), "atEnd")), block(
                 call("println", send(load("tokensGen"), "next"))
             ))
-        ));
+        ));*/
 
 
 
@@ -801,9 +802,6 @@ public class Main {
             ),
             load("x")
         ));*/
-        CodeSegment codeSegment = Generator.toInstructions(program);
-
-        Thread thread = new Thread(new CallFrame(codeSegment));
 
         /*Thread thread = new Thread(new CallFrame(new Instruction[] {
             loadEnvironment,
@@ -876,12 +874,339 @@ public class Main {
             visitApply,
             finish
         }));*/
-        long start = System.currentTimeMillis();
-        thread.evalAll();
-        long end = System.currentTimeMillis();
-        System.out.println("Elapsed: " + (end - start) + "ms");
-        Object result = thread.callFrame.pop();
 
-        System.out.println(result);
+        ArrayList<Long> timings = new ArrayList<>();
+
+        for(int i = 0; i < 100; i++) {
+            System.out.println("************************Eval************************");
+            AST program = ast();
+            CodeSegment codeSegment = Generator.toInstructions(program);
+            Thread thread = new Thread(new CallFrame(codeSegment));
+
+            long start = System.currentTimeMillis();
+            thread.evalAll();
+            long end = System.currentTimeMillis();
+            //System.out.println("Elapsed: " + (end - start) + "ms");
+            timings.add(end - start);
+            Object result = thread.callFrame.pop();
+
+            //System.out.println(result);
+        }
+
+        double elapsed = timings.stream().mapToInt(x -> x.intValue()).average().getAsDouble();
+        System.out.println("Elapsed: " + elapsed + "ms");
+    }
+
+    private static AST ast() throws Exception {
+        String sourceCode =
+            "(muli (muli 34534 435) 7)\n" +
+            "(addi 456 67)";
+            /*" (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n" +
+            " (word  34534 ) \"str\" \n";*/
+        InputStream sourceCodeInputStream = new ByteArrayInputStream(sourceCode.getBytes());
+        Reader sourceCodeInputStreamReader = new InputStreamReader(sourceCodeInputStream);
+
+        AST program = program(block(
+            defun("println", new String[]{"str"},
+                invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), invoke(load("str"), Object.class.getMethod("toString")))
+            ),
+
+            defun("generate", new String[]{"producer"}, block(
+                local("generator", object(
+                    field("producer", load("producer")),
+                    field("hasNext", literal(false)),
+                    method("atEnd", not(load("hasNext"))),
+                    method("next", block(
+                        local("res", load("current")),
+                        store("hasNext", literal(false)),
+                        store("returnFrame", frame),
+                        resume(load("yieldFrame"), literal(null)),
+                        load("res")
+                    )),
+                    field("returnFrame", literal(false)),
+                    field("yieldFrame", literal(false)),
+                    method("yield", new String[]{"value"}, block(
+                        store("hasNext", literal(true)),
+                        store("current", load("value")),
+                        store("yieldFrame", frame),
+                        resume(load("returnFrame"), literal(null))
+                    )),
+                    field("current", literal(false)),
+                    field("returnFrame", frame)
+                )),
+                apply(fn(new String[]{"producer", "generator"}, block(
+                    apply(load("producer"), load("generator")),
+                    resume(load(load("generator"), "returnFrame"), literal(null))
+                )), load("producer"), load("generator")),
+                load("generator")
+            )),
+
+            defun("buffer", new String[]{"stream"}, object(
+                field("items", newInstance(ArrayList.class.getConstructor())),
+                field("index", literal(0)),
+                method("consume", store("index", addi(load("index"), literal(1)))),
+                method("atEnd", block(
+                    send(env(), "ensureBuffered"),
+                    not(lti(load("index"), invoke(load("items"), ArrayList.class.getMethod("size"))))
+                )),
+                method("peek", send(env(), "la", literal(0))),
+                method("peek1", send(env(), "la", literal(1))),
+                method("la", new String[]{"i"}, block(
+                    block(
+                        send(env(), "ensureBuffered"),
+                        test(lti(load("index"), invoke(load("items"), ArrayList.class.getMethod("size"))),
+                            invoke(load("items"), ArrayList.class.getMethod("get", int.class), load("index")),
+                            literal(false)
+                        )
+                    )
+                )),
+                method("ensureBuffered", block(
+                    loop(and(not(send(load("stream"), "atEnd")), not(lti(load("index"), invoke(load("items"), ArrayList.class.getMethod("size"))))), block(
+                        invoke(load("items"), ArrayList.class.getMethod("add", Object.class), send(load("stream"), "next"))
+                    ))
+                ))
+            )),
+
+            defun("chars", new String[]{"reader"}, fn(new String[]{"m"}, block(
+                    local("b", literal(0)),
+                    loop(
+                        not(eqi(store("b", invoke(load("reader"), Reader.class.getMethod("read"))), literal(-1))),
+                        block(
+                            local("ch", load("b")),
+                            send(load("m"), "yield", itoc(load("ch")))
+                        )
+                    )))
+            ),
+
+            defun("tokens", new String[]{"chars"}, fn(new String[]{"m"}, block(
+                defun("ignore", block(
+                    loop(
+                        and(
+                            not(send(load("chars"), "atEnd")),
+                            invoke(Character.class.getMethod("isWhitespace", char.class), send(load("chars"), "peek"))
+                        ),
+                        block(
+                            send(load("chars"), "consume")
+                        )
+                    )
+                )),
+
+                call("ignore"),
+
+                loop(not(send(load("chars"), "atEnd")), block(
+                    local("token", literal(false)),
+
+                    test(
+                        eqc(send(load("chars"), "peek"), literal('(')),
+                        block(
+                            store("token", object(
+                                field("type", literal("OPEN_PAR")),
+                                field("typeCode", literal(0))
+                            )),
+                            send(load("chars"), "consume")
+                        ),
+                        test(
+                            eqc(send(load("chars"), "peek"), literal(')')),
+                            block(
+                                store("token", object(
+                                    field("type", literal("CLOSE_PAR")),
+                                    field("typeCode", literal(1))
+                                )),
+                                send(load("chars"), "consume")
+                            ),
+                            test(
+                                eqc(send(load("chars"), "peek"), literal('\"')),
+                                block(
+                                    send(load("chars"), "consume"),
+
+                                    local("stringBuilder", newInstance(StringBuilder.class.getConstructor())),
+                                    invoke(load("stringBuilder"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
+                                    send(load("chars"), "consume"),
+
+                                    loop(
+                                        and(
+                                            not(send(load("chars"), "atEnd")),
+                                            not(eqc(send(load("chars"), "peek"), literal('\"')))
+                                        ),
+                                        block(
+                                            invoke(load("stringBuilder"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
+                                            send(load("chars"), "consume")
+                                        )
+                                    ),
+
+                                    send(load("chars"), "consume"),
+
+                                    store("token", object(
+                                        field("type", literal("STRING")),
+                                        field("typeCode", literal(2)),
+                                        field("value", invoke(load("stringBuilder"), StringBuilder.class.getMethod("toString")))
+                                    ))
+                                ),
+                                test(
+                                    invoke(Character.class.getMethod("isDigit", char.class), send(load("chars"), "peek")),
+                                    block(
+                                        local("digits", newInstance(StringBuilder.class.getConstructor())),
+                                        invoke(load("digits"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
+                                        send(load("chars"), "consume"),
+
+                                        loop(
+                                            and(
+                                                not(send(load("chars"), "atEnd")),
+                                                invoke(Character.class.getMethod("isDigit", char.class), send(load("chars"), "peek"))
+                                            ),
+                                            block(
+                                                invoke(load("digits"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
+                                                send(load("chars"), "consume")
+                                            )
+                                        ),
+
+                                        store("token", object(
+                                            field("type", literal("INT")),
+                                            field("typeCode", literal(3)),
+                                            field("value", invoke(Integer.class.getMethod("parseInt", String.class), invoke(load("digits"), StringBuilder.class.getMethod("toString"))))
+                                        ))
+                                    ),
+                                    test(
+                                        invoke(Character.class.getMethod("isJavaIdentifierStart", char.class), send(load("chars"), "peek")),
+                                        block(
+                                            local("stringBuilder", newInstance(StringBuilder.class.getConstructor())),
+                                            invoke(load("stringBuilder"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
+                                            send(load("chars"), "consume"),
+
+                                            loop(
+                                                and(
+                                                    not(send(load("chars"), "atEnd")),
+                                                    invoke(Character.class.getMethod("isJavaIdentifierPart", char.class), send(load("chars"), "peek"))
+                                                ),
+                                                block(
+                                                    invoke(load("stringBuilder"), StringBuilder.class.getMethod("append", char.class), send(load("chars"), "peek")),
+                                                    send(load("chars"), "consume")
+                                                )
+                                            ),
+
+                                            store("token", object(
+                                                field("type", literal("WORD")),
+                                                field("typeCode", literal(4)),
+                                                field("value", invoke(load("stringBuilder"), StringBuilder.class.getMethod("toString")))
+                                            ))
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
+
+                    send(load("m"), "yield", load("token")),
+                    call("ignore")
+                ))
+            ))),
+
+            defun("nodes", new String[]{"tokens"}, fn(new String[]{"m"}, block(
+                defun("parseNode", block(
+                    local("node", literal(false)),
+
+                    test(
+                        eqi(load(send(load("tokens"), "peek"), "typeCode"), literal(0)), // OPEN_PAR
+                        block(
+                            send(load("tokens"), "consume"),
+                            test(
+                                eqi(load(send(load("tokens"), "peek"), "typeCode"), literal(4)), // WORD
+                                block(
+                                    local("operator", load(send(load("tokens"), "peek"), "value")),
+                                    send(load("tokens"), "consume"),
+                                    local("operands", newInstance(ArrayList.class.getConstructor())),
+                                    loop(
+                                        and(
+                                            not(send(load("tokens"), "atEnd")),
+                                            not(eqi(load(send(load("tokens"), "peek"), "typeCode"), literal(1))) // not CLOSE_PAR
+                                        ),
+                                        block(
+                                            local("operand", call("parseNode")),
+                                            invoke(load("operands"), ArrayList.class.getMethod("add", Object.class), load("operand"))
+                                        )
+                                    ),
+                                    send(load("tokens"), "consume"), // consume CLOSE_PAR
+                                    store("node",
+                                        invoke(AST.Factory.class.getMethod("parseOperation", String.class, List.class), load("operator"), load("operands"))
+                                    )
+                                )
+                            )
+                        ),
+                        test(
+                            eqi(load(send(load("tokens"), "peek"), "typeCode"), literal(2)), // STRING
+                            block(
+                                store("node",
+                                    invoke(AST.Factory.class.getMethod("literal", Object.class), load(send(load("tokens"), "peek"), "value"))
+                                ),
+                                send(load("tokens"), "consume")
+                            ),
+                            test(
+                                eqi(load(send(load("tokens"), "peek"), "typeCode"), literal(3)), // INTEGER
+                                block(
+                                    store("node",
+                                        invoke(AST.Factory.class.getMethod("literal", Object.class), load(send(load("tokens"), "peek"), "value"))
+                                    ),
+                                    send(load("tokens"), "consume")
+                                ),
+                                test(
+                                    eqi(load(send(load("tokens"), "peek"), "typeCode"), literal(4)), // WORD
+                                    block(
+                                        store("node",
+                                            invoke(AST.Factory.class.getMethod("load", String.class), load(send(load("tokens"), "peek"), "value"))
+                                        ),
+                                        send(load("tokens"), "consume")
+                                    )
+                                )
+                            )
+                        )
+                    ),
+
+                    load("node")
+                )),
+
+                loop(not(send(load("tokens"), "atEnd")), block(
+                    local("node", call("parseNode")),
+                    send(load("m"), "yield", load("node"))
+                ))
+            ))),
+
+            local("charsGen", call("buffer", call("generate", call("chars", literal(sourceCodeInputStreamReader))))),
+            local("tokensGen", call("buffer", call("generate", call("tokens", load("charsGen"))))),
+            local("nodesGen", call("generate", call("nodes", load("tokensGen")))),
+
+            loop(not(send(load("nodesGen"), "atEnd")), block(
+                call("println", send(load("nodesGen"), "next"))
+            ))
+
+            /*loop(not(send(load("tokensGen"), "atEnd")), block(
+                call("println", send(load("tokensGen"), "next"))
+            ))*/
+        ));
+
+        return program;
     }
 }
