@@ -4,9 +4,9 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -54,11 +54,261 @@ public interface AST extends Node {
         T visitAnd(AST lhs, AST rhs);
         T visitOr(AST lhs, AST rhs);
         T visitEval(AST target);
+
+        class Default<T> implements Visitor<T> {
+            @Override
+            public T visitProgram(AST code) {
+                return null;
+            }
+
+            @Override
+            public T visitBlock(List<AST> code) {
+                return null;
+            }
+
+            @Override
+            public T visitLiteral(Object obj) {
+                return null;
+            }
+
+            @Override
+            public T visitAddi(AST lhs, AST rhs) {
+                return null;
+            }
+
+            @Override
+            public T visitSubi(AST lhs, AST rhs) {
+                return null;
+            }
+
+            @Override
+            public T visitMuli(AST lhs, AST rhs) {
+                return null;
+            }
+
+            @Override
+            public T visitDivi(AST lhs, AST rhs) {
+                return null;
+            }
+
+            @Override
+            public T visitLti(AST lhs, AST rhs) {
+                return null;
+            }
+
+            @Override
+            public T visitGti(AST lhs, AST rhs) {
+                return null;
+            }
+
+            @Override
+            public T visitEqi(AST lhs, AST rhs) {
+                return null;
+            }
+
+            @Override
+            public T visitNewInstance(Constructor constructor, List<AST> args) {
+                return null;
+            }
+
+            @Override
+            public T visitInvoke(Method method, List<AST> args) {
+                return null;
+            }
+
+            @Override
+            public T visitInvoke(AST target, Method method, List<AST> args) {
+                return null;
+            }
+
+            @Override
+            public T visitFieldGet(Field field) {
+                return null;
+            }
+
+            @Override
+            public T visitFieldGet(AST target, Field field) {
+                return null;
+            }
+
+            @Override
+            public T visitFieldSet(Field field, AST value) {
+                return null;
+            }
+
+            @Override
+            public T visitFieldSet(AST target, Field field, AST value) {
+                return null;
+            }
+
+            @Override
+            public T visitLocal(AST target, String name, AST value) {
+                return null;
+            }
+
+            @Override
+            public T visitLocal(String name, AST value) {
+                return null;
+            }
+
+            @Override
+            public T visitStore(AST target, String name, AST value) {
+                return null;
+            }
+
+            @Override
+            public T visitStore(String name, AST value) {
+                return null;
+            }
+
+            @Override
+            public T visitLoad(AST target, String name) {
+                return null;
+            }
+
+            @Override
+            public T visitLoad(String name) {
+                return null;
+            }
+
+            @Override
+            public T visitTest(AST condition, AST ifTrue, AST ifFalse) {
+                return null;
+            }
+
+            @Override
+            public T visitLoop(AST condition, AST body) {
+                return null;
+            }
+
+            @Override
+            public T visitEnv() {
+                return null;
+            }
+
+            @Override
+            public T visitItoc(AST i) {
+                return null;
+            }
+
+            @Override
+            public T visitApplyCC(AST target) {
+                return null;
+            }
+
+            @Override
+            public T visitResume(AST target, AST value) {
+                return null;
+            }
+
+            @Override
+            public T visitFrame() {
+                return null;
+            }
+
+            @Override
+            public T visitRet(AST expression) {
+                return null;
+            }
+
+            @Override
+            public T visitNot(AST expression) {
+                return null;
+            }
+
+            @Override
+            public T visitBP() {
+                return null;
+            }
+
+            @Override
+            public T visitSend(AST target, String name, List<AST> arguments) {
+                return null;
+            }
+
+            @Override
+            public T visitObject(List<Slot> slots) {
+                return null;
+            }
+
+            @Override
+            public T visitEqc(AST lhs, AST rhs) {
+                return null;
+            }
+
+            @Override
+            public T visitLoadD(String name) {
+                return null;
+            }
+
+            @Override
+            public T visitAnd(AST lhs, AST rhs) {
+                return null;
+            }
+
+            @Override
+            public T visitOr(AST lhs, AST rhs) {
+                return null;
+            }
+
+            @Override
+            public T visitEval(AST target) {
+                return null;
+            }
+        }
     }
 
-    class Factory {
+    class Parse {
+        private static Map<String, BiFunction<String, List<AST>, AST>> factories;
+
+        static {
+            factories = Arrays.asList(Factory.class.getMethods()).stream().collect(Collectors.toMap(
+                m -> m.getName() + "/" + m.getParameterTypes().length,
+                m -> {
+                    List<Function<AST, Object>> argumentDerivers = Arrays.asList(m.getParameterTypes()).stream().map(pt -> {
+                        if (pt.equals(String.class)) {
+                            return (Function<AST, Object>) arg -> arg.accept(new Visitor.Default<Object>() {
+                                @Override
+                                public Object visitLoad(String name) {
+                                    return name;
+                                }
+                            });
+                        } else {
+                            return (Function<AST, Object>) arg -> arg;
+                        }
+                    }).collect(Collectors.toList());
+
+                    return (operator, operands) -> {
+                        Object[] arguments = new Object[operands.size()];
+                        for(int i = 0; i < argumentDerivers.size(); i++)
+                            arguments[i] = argumentDerivers.get(i).apply(operands.get(i));
+
+                        try {
+                            return (AST)m.invoke(null, arguments);
+                        } catch (IllegalAccessException e) {
+                            e.printStackTrace();
+                        } catch (InvocationTargetException e) {
+                            e.printStackTrace();
+                        }
+
+                        return null;
+                    };
+                }
+            ));
+        }
+
         public static AST parseOperation(String operator, List<AST> operands) {
-            Object[] arguments = operands.stream().toArray(s -> new Object[s]);
+            BiFunction<String, List<AST>, AST> factory = factories.get(operator + "/" + operands.size());
+
+            if(factory != null) {
+                return factory.apply(operator, operands);
+            } else {
+                // Call method
+            }
+
+            return null;
+
+            /*Object[] arguments = operands.stream().toArray(s -> new Object[s]);
             Class<?>[] parameterTypes = operands.stream().map(x -> AST.class).toArray(s -> new Class<?>[s]);
             try {
                 Method method = Factory.class.getMethod(operator, parameterTypes);
@@ -72,9 +322,11 @@ public interface AST extends Node {
             } catch (NoSuchMethodException e) {
                 // Call method
             }
-            return null;
+            return null;*/
         }
+    }
 
+    class Factory {
         public static AST program(AST code) {
             return new AST() {
                 @Override

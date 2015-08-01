@@ -1169,7 +1169,7 @@ public class Main {
                                     ),
                                     send(load("tokens"), "consume"), // consume CLOSE_PAR
                                     store("node",
-                                        invoke(AST.Factory.class.getMethod("parseOperation", String.class, List.class), load("operator"), load("operands"))
+                                        invoke(AST.Parse.class.getMethod("parseOperation", String.class, List.class), load("operator"), load("operands"))
                                     )
                                 )
                             )

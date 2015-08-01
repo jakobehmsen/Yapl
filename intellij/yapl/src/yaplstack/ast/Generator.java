@@ -470,8 +470,9 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitEval(AST target) {
+        emitLoadSelf();
         visitAsExpression(target);
-        emit(Instruction.Factory.pushCallFrame(0));
+        emit(Instruction.Factory.pushCallFrame(1));
 
         if(!asExpression)
             emit(Instruction.Factory.pop);
