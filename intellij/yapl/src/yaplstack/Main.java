@@ -877,7 +877,7 @@ public class Main {
 
         ArrayList<Long> timings = new ArrayList<>();
 
-        for(int i = 0; i < 10; i++) {
+        for(int i = 0; i < 1; i++) {
             System.out.println("************************Eval************************");
             AST program = ast();
             CodeSegment codeSegment = Generator.toInstructions(program);
@@ -927,10 +927,14 @@ public class Main {
             " (word  34534 ) \"str\" \n" +
             " (word  34534 ) \"str\" \n" +
             " (word  34534 ) \"str\" \n";*/
-        InputStream sourceCodeInputStream = new ByteArrayInputStream(sourceCode.getBytes());
+        //InputStream sourceCodeInputStream = new ByteArrayInputStream(sourceCode.getBytes());
+        InputStream sourceCodeInputStream = System.in;
         Reader sourceCodeInputStreamReader = new InputStreamReader(sourceCodeInputStream);
 
         AST program = program(block(
+            defun("print", new String[]{"str"},
+                invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("print", String.class), invoke(load("str"), Object.class.getMethod("toString")))
+            ),
             defun("println", new String[]{"str"},
                 invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), invoke(load("str"), Object.class.getMethod("toString")))
             ),
@@ -938,19 +942,31 @@ public class Main {
             defun("generate", new String[]{"producer"}, block(
                 local("generator", object(
                     field("producer", load("producer")),
-                    field("hasNext", literal(false)),
-                    method("atEnd", not(load("hasNext"))),
+                    field("hadNext", literal(false)),
+                    field("started", literal(false)),
+                    method("hadNext", load("hadNext")),
                     method("next", block(
-                        local("res", load("current")),
-                        store("hasNext", literal(false)),
+                        store("hadNext", literal(false)),
                         store("returnFrame", frame),
-                        resume(load("yieldFrame"), literal(null)),
-                        load("res")
+
+                        test(load("started"),
+                            resume(load("yieldFrame"), literal(null)),
+                            block(
+                                store("started", literal(true)),
+
+                                apply(fn(block(
+                                    apply(load("producer"), load("generator")),
+                                    resume(load(load("generator"), "returnFrame"), literal(null))
+                                )))
+                            )
+                        ),
+
+                        load("current")
                     )),
                     field("returnFrame", literal(false)),
                     field("yieldFrame", literal(false)),
                     method("yield", new String[]{"value"}, block(
-                        store("hasNext", literal(true)),
+                        store("hadNext", literal(true)),
                         store("current", load("value")),
                         store("yieldFrame", frame),
                         resume(load("returnFrame"), literal(null))
@@ -958,16 +974,13 @@ public class Main {
                     field("current", literal(false)),
                     field("returnFrame", frame)
                 )),
-                apply(fn(new String[]{"producer", "generator"}, block(
-                    apply(load("producer"), load("generator")),
-                    resume(load(load("generator"), "returnFrame"), literal(null))
-                )), load("producer"), load("generator")),
                 load("generator")
             )),
 
             defun("buffer", new String[]{"stream"}, object(
                 field("items", newInstance(ArrayList.class.getConstructor())),
                 field("index", literal(0)),
+                field("atEndOfStream", literal(false)),
                 method("consume", store("index", addi(load("index"), literal(1)))),
                 method("atEnd", block(
                     send(env(), "ensureBuffered"),
@@ -985,8 +998,13 @@ public class Main {
                     )
                 )),
                 method("ensureBuffered", block(
-                    loop(and(not(send(load("stream"), "atEnd")), not(lti(load("index"), invoke(load("items"), ArrayList.class.getMethod("size"))))), block(
-                        invoke(load("items"), ArrayList.class.getMethod("add", Object.class), send(load("stream"), "next"))
+                    loop(and(not(load("atEndOfStream")), not(lti(load("index"), invoke(load("items"), ArrayList.class.getMethod("size"))))), block(
+                        local("next", send(load("stream"), "next")),
+                        test(
+                            send(load("stream"), "hadNext"),
+                            invoke(load("items"), ArrayList.class.getMethod("add", Object.class), load("next")),
+                            store("atEndOfStream", literal(true))
+                        )
                     ))
                 ))
             )),
@@ -1198,16 +1216,20 @@ public class Main {
             local("tokensGen", call("buffer", call("generate", call("tokens", load("charsGen"))))),
             local("nodesGen", call("generate", call("nodes", load("tokensGen")))),
 
-            loop(not(send(load("nodesGen"), "atEnd")), block(
+            local("atEndOfStream", literal(false)),
+            loop(not(load("atEndOfStream")), block(
+                call("print", literal("> ")),
                 local("node", send(load("nodesGen"), "next")),
-                local("nodeAsCode", invoke(Generator.class.getMethod("toEvalInstructions", AST.class), load("node"))),
-                local("evalResult", eval(load("nodeAsCode"))),
-                call("println", load("evalResult"))
+                test(
+                    send(load("nodesGen"), "hadNext"),
+                    block(
+                        local("nodeAsCode", invoke(Generator.class.getMethod("toEvalInstructions", AST.class), load("node"))),
+                        local("evalResult", eval(load("nodeAsCode"))),
+                        call("println", load("evalResult"))
+                    ),
+                    store("atEndOfStream", literal(true))
+                )
             ))
-
-            /*loop(not(send(load("tokensGen"), "atEnd")), block(
-                call("println", send(load("tokensGen"), "next"))
-            ))*/
         ));
 
         return program;
