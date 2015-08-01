@@ -469,6 +469,17 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
+    public Void visitEval(AST target) {
+        visitAsExpression(target);
+        emit(Instruction.Factory.pushCallFrame(0));
+
+        if(!asExpression)
+            emit(Instruction.Factory.pop);
+
+        return null;
+    }
+
+    @Override
     public Void visitNewInstance(Constructor constructor, List<AST> args) {
         args.forEach(x -> visitAsExpression(x));
         emit(Instruction.Factory.newInstance(constructor));
@@ -731,6 +742,14 @@ public class Generator implements AST.Visitor<Void> {
 
     public static CodeSegment toInstructions(AST code) {
         return toInstructions(code, g -> { }, g -> { });
+    }
+
+    public static CodeSegment toEvalInstructions(AST code) {
+        // generator.emit(Instruction.Factory.popCallFrame(1));
+        return toInstructions(
+            code,
+            g -> { },
+            g -> g.emit(Instruction.Factory.popCallFrame(1)));
     }
 
     private static CodeSegment toInstructions(AST code, Consumer<Generator> pre, Consumer<Generator> post) {

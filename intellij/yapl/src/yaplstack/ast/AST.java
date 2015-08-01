@@ -53,6 +53,7 @@ public interface AST extends Node {
         T visitLoadD(String name);
         T visitAnd(AST lhs, AST rhs);
         T visitOr(AST lhs, AST rhs);
+        T visitEval(AST target);
     }
 
     class Factory {
@@ -363,6 +364,25 @@ public interface AST extends Node {
 
         public static AST apply(AST target, AST... arguments) {
             return send(target, "call", arguments);
+        }
+
+        public static AST eval(AST target) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitEval(target);
+                }
+
+                @Override
+                public String getName() {
+                    return "eval";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(target);
+                }
+            };
         }
 
         public static AST call(String name, AST... arguments) {

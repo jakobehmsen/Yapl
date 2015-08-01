@@ -877,7 +877,7 @@ public class Main {
 
         ArrayList<Long> timings = new ArrayList<>();
 
-        for(int i = 0; i < 100; i++) {
+        for(int i = 0; i < 10; i++) {
             System.out.println("************************Eval************************");
             AST program = ast();
             CodeSegment codeSegment = Generator.toInstructions(program);
@@ -899,8 +899,8 @@ public class Main {
 
     private static AST ast() throws Exception {
         String sourceCode =
-            "(muli (muli 34534 435) 7)\n" +
-            "(addi 456 67)";
+            "(muli (muli 2 3) 4)\n" +
+            "(addi 4 5)";
             /*" (word  34534 ) \"str\" \n" +
             " (word  34534 ) \"str\" \n" +
             " (word  34534 ) \"str\" \n" +
@@ -992,14 +992,14 @@ public class Main {
             )),
 
             defun("chars", new String[]{"reader"}, fn(new String[]{"m"}, block(
-                    local("b", literal(0)),
-                    loop(
-                        not(eqi(store("b", invoke(load("reader"), Reader.class.getMethod("read"))), literal(-1))),
-                        block(
-                            local("ch", load("b")),
-                            send(load("m"), "yield", itoc(load("ch")))
-                        )
-                    )))
+                local("b", literal(0)),
+                loop(
+                    not(eqi(store("b", invoke(load("reader"), Reader.class.getMethod("read"))), literal(-1))),
+                    block(
+                        local("ch", load("b")),
+                        send(load("m"), "yield", itoc(load("ch")))
+                    )
+                )))
             ),
 
             defun("tokens", new String[]{"chars"}, fn(new String[]{"m"}, block(
@@ -1199,7 +1199,10 @@ public class Main {
             local("nodesGen", call("generate", call("nodes", load("tokensGen")))),
 
             loop(not(send(load("nodesGen"), "atEnd")), block(
-                call("println", send(load("nodesGen"), "next"))
+                local("node", send(load("nodesGen"), "next")),
+                local("nodeAsCode", invoke(Generator.class.getMethod("toEvalInstructions", AST.class), load("node"))),
+                local("evalResult", eval(load("nodeAsCode"))),
+                call("println", load("evalResult"))
             ))
 
             /*loop(not(send(load("tokensGen"), "atEnd")), block(
