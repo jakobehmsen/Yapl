@@ -1,7 +1,6 @@
 package yaplstack;
 
 import java.util.Arrays;
-import java.util.Stack;
 import java.util.stream.Collectors;
 
 public class CallFrame {

@@ -41,7 +41,6 @@ public interface AST extends Node {
         T visitLoop(AST condition, AST body);
         T visitEnv();
         T visitItoc(AST i);
-        T visitApplyCC(AST target);
         T visitResume(AST target, AST value);
         T visitFrame();
         T visitRet(AST expression);
@@ -192,11 +191,6 @@ public interface AST extends Node {
             }
 
             @Override
-            public T visitApplyCC(AST target) {
-                return null;
-            }
-
-            @Override
             public T visitResume(AST target, AST value) {
                 return null;
             }
@@ -307,22 +301,6 @@ public interface AST extends Node {
             }
 
             return null;
-
-            /*Object[] arguments = operands.stream().toArray(s -> new Object[s]);
-            Class<?>[] parameterTypes = operands.stream().map(x -> AST.class).toArray(s -> new Class<?>[s]);
-            try {
-                Method method = Factory.class.getMethod(operator, parameterTypes);
-                try {
-                    return (AST)method.invoke(null, arguments);
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                } catch (InvocationTargetException e) {
-                    e.printStackTrace();
-                }
-            } catch (NoSuchMethodException e) {
-                // Call method
-            }
-            return null;*/
         }
     }
 
@@ -717,26 +695,6 @@ public interface AST extends Node {
             };
         }
 
-
-        public static AST applycc(AST target) {
-            return new AST() {
-                @Override
-                public String getName() {
-                    return "applycc";
-                }
-
-                @Override
-                public List<Node> getChildren() {
-                    return Arrays.asList(target);
-                }
-
-                @Override
-                public <T> T accept(Visitor<T> visitor) {
-                    return visitor.visitApplyCC(target);
-                }
-            };
-        }
-
         public static AST test(AST condition, AST ifTrue) {
             return test(condition, ifTrue, literal(false));
         }
@@ -1069,16 +1027,6 @@ public interface AST extends Node {
                 }
             };
         }
-
-        /*public static AST gtei(AST lhs, AST rhs) {
-            return keep(
-                lhs, rhs,
-                or(
-                    gtei(top0, top1),
-                    eqc(top0, top1)
-                )
-            );
-        }*/
 
         public static AST eqc(AST lhs, AST rhs) {
             return new AST() {

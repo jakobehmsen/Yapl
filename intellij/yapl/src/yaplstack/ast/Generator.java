@@ -169,7 +169,6 @@ public class Generator implements AST.Visitor<Void> {
                     Generator bodyGenerator = new Generator(true);
                     bodyGenerator.functionScope = true;
                     bodyGenerator.context.locals.addAll(params);
-                    //bodyGenerator.context.closedContexts = closedContexts;
                     bodyGenerator.context.context = context;
                     code.accept(bodyGenerator);
                     int variableCount = bodyGenerator.context.locals.size() - params.size();
@@ -263,11 +262,6 @@ public class Generator implements AST.Visitor<Void> {
         visitAsExpression(i);
         emit(Instruction.Factory.itoc);
 
-        return null;
-    }
-
-    @Override
-    public Void visitApplyCC(AST target) {
         return null;
     }
 
@@ -700,16 +694,6 @@ public class Generator implements AST.Visitor<Void> {
         return null;
     }
 
-    private void visitAsNonFunction(AST code) {
-        Generator generator = new Generator(asExpression, false, stagedInstructions, null);
-        code.accept(generator);
-    }
-
-    private void visitAsObject(AST code) {
-        Generator generator = new Generator(false, false, stagedInstructions, null);
-        code.accept(generator);
-    }
-
     private void visitAsExpression(AST expression) {
         Generator generator = new Generator(true, functionScope, stagedInstructions, context);
         expression.accept(generator);
@@ -746,7 +730,6 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     public static CodeSegment toEvalInstructions(AST code) {
-        // generator.emit(Instruction.Factory.popCallFrame(1));
         return toInstructions(
             code,
             g -> { },
