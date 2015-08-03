@@ -1231,25 +1231,25 @@ public class Main {
                 )
             ))
 
-            /*
 
-            while more nodes {
 
-                try {
-                    var node = nodes.next()
-                    var nodeAsCode = invoke(method("Generator", "toEvalInstructions", class(AST), node)
-                    var evalResult = eval(nodeAsCode)
-                } catch(InvalidCharException e) {
-                    println e
-                    chars.consume();
-                } catch(SyntaxErrorException e) {
-                    println e
-                    tokens.consume();
-                }
+//            while more nodes {
+//
+//                try {
+//                    var node = nodes.next()
+//                    var nodeAsCode = invoke(method("Generator", "toEvalInstructions", class(AST), node)
+//                    var evalResult = eval(nodeAsCode)
+//                } catch(InvalidCharException e) {
+//                    println e
+//                    chars.consume();
+//                } catch(SyntaxErrorException e) {
+//                    println e
+//                    tokens.consume();
+//                }
+//
+//            }
 
-            }
 
-            */
         ));
 
         return program;
