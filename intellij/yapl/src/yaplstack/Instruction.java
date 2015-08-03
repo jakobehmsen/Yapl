@@ -8,7 +8,7 @@ import java.util.function.Function;
 
 // Instructions should be replaced by first class objects, that are designed to be ("more") interpretable
 public interface Instruction {
-    void eval(Thread thread);
+    void eval(Thread thread) throws Throwable;
 
     int popCount();
     int pushCount();
@@ -23,11 +23,11 @@ public interface Instruction {
             return new int[]{ip + 1};
         }
 
-        default void eval(Thread thread) {
+        default void eval(Thread thread) throws Throwable {
             doEval(thread);
             thread.callFrame.incrementIP();
         }
-        void doEval(Thread thread);
+        void doEval(Thread thread) throws Throwable;
     }
 
     class Factory {
@@ -782,24 +782,13 @@ public interface Instruction {
         public static IncIP newInstance(Constructor<?> constructor) {
             return new IncIP() {
                 @Override
-                public void doEval(Thread thread) {
+                public void doEval(Thread thread) throws Throwable {
                     int argCount = constructor.getParameterCount();
                     Object[] args = new Object[argCount];
                     for(int i = argCount - 1; i >= 0; i--)
                         args[i] = thread.callFrame.pop();
-                    Object res = null;
-                    try {
-                        res = constructor.newInstance(args);
-                        thread.callFrame.push(res);
-                    } catch (InstantiationException e) {
-                        e.printStackTrace();
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    } catch (InvocationTargetException e) {
-                        e.printStackTrace();
-                    }
-
-                    // How to handle exceptions?
+                    Object res = constructor.newInstance(args);
+                    thread.callFrame.push(res);
                 }
 
                 @Override
@@ -824,27 +813,14 @@ public interface Instruction {
 
             return new IncIP() {
                 @Override
-                public void doEval(Thread thread) {
+                public void doEval(Thread thread) throws Throwable {
                     int argCount = method.getParameterCount();
                     Object[] args = new Object[argCount];
                     for(int i = argCount - 1; i >= 0; i--)
                         args[i] = thread.callFrame.pop();
                     Object obj = instance ? thread.callFrame.pop() : null;
-                    Object res = null;
-                    try {
-                        res = method.invoke(obj, args);
-                        thread.callFrame.push(res);
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    } catch (InvocationTargetException e) {
-                        e.printStackTrace();
-                    } catch(IllegalArgumentException e) {
-                        e.printStackTrace();
-                    } catch(NullPointerException e) {
-                        e.printStackTrace();
-                    }
-
-                    // How to handle exceptions?
+                    Object res = method.invoke(obj, args);
+                    thread.callFrame.push(res);
                 }
 
                 @Override
@@ -874,17 +850,10 @@ public interface Instruction {
 
             return new IncIP() {
                 @Override
-                public void doEval(Thread thread) {
+                public void doEval(Thread thread) throws Throwable {
                     Object obj = instance ? thread.callFrame.pop() : null;
-                    Object res = null;
-                    try {
-                        res = field.get(obj);
-                        thread.callFrame.push(res);
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
-
-                    // How to handle exceptions?
+                    Object res = field.get(obj);
+                    thread.callFrame.push(res);
                 }
 
                 @Override
@@ -909,16 +878,10 @@ public interface Instruction {
 
             return new IncIP() {
                 @Override
-                public void doEval(Thread thread) {
+                public void doEval(Thread thread) throws Throwable {
                     Object value = thread.callFrame.pop();
                     Object obj = instance ? thread.callFrame.pop() : null;
-                    try {
-                        field.set(obj, value);
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
-
-                    // How to handle exceptions?
+                    field.set(obj, value);
                 }
 
                 @Override
