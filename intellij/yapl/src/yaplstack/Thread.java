@@ -1,25 +1,30 @@
 package yaplstack;
 
+import java.util.function.BiConsumer;
+
 public class Thread {
     public SymbolTable symbolTable = new SymbolTable();
     public CallFrame callFrame;
     private boolean run;
 
-    public Thread(CallFrame callFrame) {
+    private BiConsumer<Thread, Throwable> exceptionHandler;
+
+    public Thread(BiConsumer<Thread, Throwable> exceptionHandler, CallFrame callFrame) {
+        this.exceptionHandler = exceptionHandler;
         this.callFrame = callFrame;
     }
 
     public Thread evalAll() {
-        try {
-            run = true;
-            while (run)
-                callFrame.codeSegment.instructions[callFrame.ip].eval(this);
-        } catch (Throwable e) {
-            e.toString();
-            e.printStackTrace();
-            callFrame.ip--;
-            callFrame.codeSegment.instructions[callFrame.ip].eval(this);
-            callFrame.codeSegment.instructions[callFrame.ip].eval(this);
+        run = true;
+
+        // Outermost loop is used for exception handling in case halt is invoked when exceptionHandler is called
+        while(run) {
+            try {
+                while (run)
+                    callFrame.codeSegment.instructions[callFrame.ip].eval(this);
+            } catch (Throwable e) {
+                exceptionHandler.accept(this, e);
+            }
         }
 
         return this;

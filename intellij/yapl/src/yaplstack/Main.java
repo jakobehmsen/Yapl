@@ -6,6 +6,7 @@ import yaplstack.ast.Generator;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 import static yaplstack.ast.AST.Factory.*;
 
@@ -880,8 +881,23 @@ public class Main {
         for(int i = 0; i < 1; i++) {
             System.out.println("************************Eval************************");
             AST program = ast();
+
+            /*CodeSegment instructionExceptionCode = ...;
+            BiConsumer<Thread, Throwable> exceptionHandlerCode = (t, e) -> {
+                CallFrame exceptionFrame = new CallFrame(t.callFrame, instructionExceptionCode);
+                exceptionFrame.push(e);
+                t.callFrame = exceptionFrame;
+            };*/
+
+            BiConsumer<Thread, Throwable> exceptionHandlerCode = (t, e) -> {
+                e.printStackTrace();
+                //t.callFrame.ip--;
+                //t.callFrame.codeSegment.instructions[t.callFrame.ip].eval(t);
+                //t.callFrame.codeSegment.instructions[t.callFrame.ip].eval(t);
+                t.halt();
+            };
             CodeSegment codeSegment = Generator.toInstructions(program);
-            Thread thread = new Thread(new CallFrame(codeSegment));
+            Thread thread = new Thread(exceptionHandlerCode, new CallFrame(codeSegment));
 
             long start = System.currentTimeMillis();
             thread.evalAll();
