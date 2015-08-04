@@ -3,13 +3,14 @@ package yaplstack;
 import java.util.function.BiConsumer;
 
 public class Thread {
-    public SymbolTable symbolTable = new SymbolTable();
+    public SymbolTable symbolTable;
     public CallFrame callFrame;
     private boolean run;
 
     private BiConsumer<Thread, Throwable> exceptionHandler;
 
-    public Thread(BiConsumer<Thread, Throwable> exceptionHandler, CallFrame callFrame) {
+    public Thread(SymbolTable symbolTable, BiConsumer<Thread, Throwable> exceptionHandler, CallFrame callFrame) {
+        this.symbolTable = symbolTable;
         this.exceptionHandler = exceptionHandler;
         this.callFrame = callFrame;
     }

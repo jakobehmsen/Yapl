@@ -2,6 +2,7 @@ package yaplstack;
 
 import yaplstack.ast.AST;
 import yaplstack.ast.Generator;
+import yaplstack.ast.Selector;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -882,22 +883,51 @@ public class Main {
             System.out.println("************************Eval************************");
             AST program = ast();
 
-            /*CodeSegment instructionExceptionCode = ...;
-            BiConsumer<Thread, Throwable> exceptionHandlerCode = (t, e) -> {
-                CallFrame exceptionFrame = new CallFrame(t.callFrame, instructionExceptionCode);
-                exceptionFrame.push(e);
-                t.callFrame = exceptionFrame;
-            };*/
+            SymbolTable symbolTable = new SymbolTable();
+
+            int onExceptionCode = symbolTable.getCode(Selector.get("onException", 2));
+            int frameCode = symbolTable.getCode("__frame__");
+
+            /*
+            try {
+                sdfsdf
+            } {
+                onException: frame, exception
+            }
+            */
 
             BiConsumer<Thread, Throwable> exceptionHandlerCode = (t, e) -> {
+                Environment exceptionHandler = (Environment)t.callFrame.get(0); // Exception handler is located in var 0
+                CallFrame exceptionHandlerFrame = (CallFrame)exceptionHandler.load(frameCode);
+                Environment exceptionHandlerExceptionHandler = (Environment)exceptionHandlerFrame.get(0);
+                Environment exceptionHandlerSelf = (Environment)exceptionHandlerFrame.get(1);
+
+                CodeSegment exceptionHandlerBody = (CodeSegment)exceptionHandler.load(onExceptionCode);
+                CallFrame exceptionFrame = new CallFrame(exceptionHandlerFrame.outer, exceptionHandlerBody);
+                exceptionFrame.push(exceptionHandlerExceptionHandler);
+                exceptionFrame.push(exceptionHandlerSelf);
+                exceptionFrame.push(t.callFrame); // Frame is first argument
+                exceptionFrame.push(e); // Exception is second argument
+
+                t.callFrame = exceptionFrame;
+            };
+
+            /*BiConsumer<Thread, Throwable> exceptionHandlerCode = (t, e) -> {
                 e.printStackTrace();
                 //t.callFrame.ip--;
                 //t.callFrame.codeSegment.instructions[t.callFrame.ip].eval(t);
                 //t.callFrame.codeSegment.instructions[t.callFrame.ip].eval(t);
                 t.halt();
-            };
+            };*/
             CodeSegment codeSegment = Generator.toInstructions(program);
-            Thread thread = new Thread(exceptionHandlerCode, new CallFrame(codeSegment));
+            CallFrame callFrame = new CallFrame(codeSegment);
+            // TODO: Should be an exception handler object (implement onException)
+            callFrame.push(new CodeSegment(1, new Instruction[] {
+                Instruction.Factory.loadVar(3), // Load exception
+                Instruction.Factory.throwException
+            }, null)); // Push initial exception handler here? Or perhaps in AST.program?
+            callFrame.push(new Environment());
+            Thread thread = new Thread(symbolTable, exceptionHandlerCode, callFrame);
 
             long start = System.currentTimeMillis();
             thread.evalAll();
@@ -914,6 +944,13 @@ public class Main {
     }
 
     private static AST ast() throws Exception {
+        if(1 != 2) {
+            return program(block(
+                // Provoke exception
+                invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("print", String.class), literal(false))
+            ));
+        }
+
         String sourceCode =
             "(muli (muli 2 3) 4)\n" +
             "(addi 4 5)";

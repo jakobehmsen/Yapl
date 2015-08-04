@@ -12,9 +12,9 @@ public class CallFrame {
 
     public CallFrame(CodeSegment codeSegment) {
         this.codeSegment = codeSegment;
-        stackArray = new Object[1 + codeSegment.maxStackSize];
+        stackArray = new Object[1 + 1 + codeSegment.maxStackSize];
 
-        push(new Environment());
+        //push(new Environment());
     }
 
     public CallFrame(CallFrame outer, CodeSegment codeSegment) {

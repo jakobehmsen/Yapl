@@ -900,5 +900,23 @@ public interface Instruction {
                 }
             };
         }
+
+        public static Instruction throwException = new Instruction() {
+            @Override
+            public void eval(Thread thread) throws Throwable {
+                Exception e = (Exception)thread.callFrame.pop();
+                throw e;
+            }
+
+            @Override
+            public int popCount() {
+                return 1;
+            }
+
+            @Override
+            public int pushCount() {
+                return 0;
+            }
+        };
     }
 }

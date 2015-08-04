@@ -28,12 +28,18 @@ public class Generator implements AST.Visitor<Void> {
 
     private static MetaFrame createContext() {
         MetaFrame context = new MetaFrame();
+        // Exception handler at 0, and self at 1
+        context.locals.add("exceptionHandler");
         context.locals.add("self");
         return context;
     }
 
-    public void emitLoadSelf() {
+    public void emitLoadExceptionHandler() {
         emit(Instruction.Factory.loadVar(0));
+    }
+
+    public void emitLoadSelf() {
+        emit(Instruction.Factory.loadVar(1));
     }
 
     public Generator(boolean asExpression, boolean functionScope, List<TwoStageGenerator> stagedInstructions, MetaFrame context) {
@@ -124,7 +130,7 @@ public class Generator implements AST.Visitor<Void> {
 
             emit(Instruction.Factory.load(Selector.get(name, arguments.size())));
 
-            emit(Instruction.Factory.pushCallFrame(1 + arguments.size()));
+            emit(Instruction.Factory.pushCallFrame(1 + 1 + arguments.size()));
 
             if (!asExpression)
                 emit(Instruction.Factory.pop);
@@ -184,7 +190,7 @@ public class Generator implements AST.Visitor<Void> {
                     generator.emit(Instruction.Factory.popCallFrame(1));
 
                     Instruction[] instructionArray = generator.generate();
-                    int maxStackSize = maxStackSize(1 /*self*/ + params.size(), instructionArray, 0);
+                    int maxStackSize = maxStackSize(1 /*exception handler*/ + 1 /*self*/ + params.size(), instructionArray, 0);
                     CodeSegment codeSegment = new CodeSegment(maxStackSize, instructionArray, x);
 
                     emit(Instruction.Factory.loadConst(codeSegment));
@@ -464,9 +470,10 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitEval(AST target) {
+        emitLoadExceptionHandler();
         emitLoadSelf();
         visitAsExpression(target);
-        emit(Instruction.Factory.pushCallFrame(1));
+        emit(Instruction.Factory.pushCallFrame(2));
 
         if(!asExpression)
             emit(Instruction.Factory.pop);
