@@ -901,11 +901,13 @@ public interface Instruction {
             };
         }
 
-        public static Instruction throwException = new Instruction() {
+        public static Instruction haltException = new Instruction() {
             @Override
             public void eval(Thread thread) throws Throwable {
                 Exception e = (Exception)thread.callFrame.pop();
-                throw e;
+                System.err.println("Uncaught exception:");
+                e.printStackTrace(System.err);
+                thread.halt();
             }
 
             @Override

@@ -912,20 +912,19 @@ public class Main {
                 t.callFrame = exceptionFrame;
             };
 
-            /*BiConsumer<Thread, Throwable> exceptionHandlerCode = (t, e) -> {
-                e.printStackTrace();
-                //t.callFrame.ip--;
-                //t.callFrame.codeSegment.instructions[t.callFrame.ip].eval(t);
-                //t.callFrame.codeSegment.instructions[t.callFrame.ip].eval(t);
-                t.halt();
-            };*/
             CodeSegment codeSegment = Generator.toInstructions(program);
             CallFrame callFrame = new CallFrame(codeSegment);
-            // TODO: Should be an exception handler object (implement onException)
-            callFrame.push(new CodeSegment(1, new Instruction[] {
+            Environment exceptionHandler = new Environment();
+            exceptionHandler.store(onExceptionCode, new CodeSegment(5, new Instruction[]{
                 Instruction.Factory.loadVar(3), // Load exception
-                Instruction.Factory.throwException
-            }, null)); // Push initial exception handler here? Or perhaps in AST.program?
+                Instruction.Factory.haltException
+            }, null));
+            // Create dummy call frame that conforms to the expected structure of an exception handler frame
+            CallFrame exceptionHandlerFrame = new CallFrame(null, new CodeSegment(2, new Instruction[0], null));
+            exceptionHandlerFrame.push(null); // Exception handler
+            exceptionHandlerFrame.push(null); // Self
+            exceptionHandler.store(frameCode, exceptionHandlerFrame);
+            callFrame.push(exceptionHandler);
             callFrame.push(new Environment());
             Thread thread = new Thread(symbolTable, exceptionHandlerCode, callFrame);
 
