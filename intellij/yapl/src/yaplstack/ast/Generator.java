@@ -482,6 +482,13 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
+    public Void visitTryCatch(AST body, AST handler) {
+        // Push new call frame with body as and handler as exception handler
+
+        return null;
+    }
+
+    @Override
     public Void visitNewInstance(Constructor constructor, List<AST> args) {
         args.forEach(x -> visitAsExpression(x));
         emit(Instruction.Factory.newInstance(constructor));

@@ -945,8 +945,20 @@ public class Main {
     private static AST ast() throws Exception {
         if(1 != 2) {
             return program(block(
-                // Provoke exception
-                invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("print", String.class), literal(false))
+                defun("println", new String[]{"str"},
+                    invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), invoke(load("str"), Object.class.getMethod("toString")))
+                ),
+
+                tryCatch(block(
+                    // Provoke exception - custom exception handler should be invoked
+                    invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("print", String.class), literal(false))
+                ), object(
+                    method("onException", new String[]{"frame, exception"}, block(
+                        calld("println", literal("Caught exception")),
+                        // Provoke exception - outer exception handler should be invoked
+                        invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("print", String.class), literal(false))
+                    ))
+                ))
             ));
         }
 

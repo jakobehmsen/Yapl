@@ -54,6 +54,8 @@ public interface AST extends Node {
         T visitOr(AST lhs, AST rhs);
         T visitEval(AST target);
 
+        T visitTryCatch(AST body, AST handler);
+
         class Default<T> implements Visitor<T> {
             @Override
             public T visitProgram(AST code) {
@@ -249,6 +251,11 @@ public interface AST extends Node {
             public T visitEval(AST target) {
                 return null;
             }
+
+            @Override
+            public T visitTryCatch(AST body, AST handler) {
+                return null;
+            }
         }
     }
 
@@ -349,6 +356,25 @@ public interface AST extends Node {
 
         public static AST defun(String name, String[] params, AST code) {
             return local(Selector.get(name, params.length), fn(params, code));
+        }
+
+        public static AST tryCatch(AST body, AST handler) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitTryCatch(body, handler);
+                }
+
+                @Override
+                public String getName() {
+                    return "tryCatch";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(body, handler);
+                }
+            };
         }
 
         public static Slot field(String name, AST value) {
