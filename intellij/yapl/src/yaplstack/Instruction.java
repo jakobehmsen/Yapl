@@ -340,12 +340,12 @@ public interface Instruction {
             };
         }
 
-        public static Instruction loadd(String name) {
+        public static Instruction loadd(String name, int ordinal) {
             return new Instruction() {
                 @Override
                 public void eval(Thread thread) {
                     int code = thread.symbolTable.getCode(name);
-                    thread.callFrame.codeSegment.instructions[thread.callFrame.ip] = loadd(code);
+                    thread.callFrame.codeSegment.instructions[thread.callFrame.ip] = loadd(code, ordinal);
                 }
 
                 @Override
@@ -370,7 +370,7 @@ public interface Instruction {
             };
         }
 
-        public static IncIP loadd(int code) {
+        public static IncIP loadd(int code, int ordinal) {
             return new IncIP() {
                 @Override
                 public void doEval(Thread thread) {
@@ -378,7 +378,7 @@ public interface Instruction {
                     CallFrame frame = thread.callFrame;
 
                     while(true) {
-                        Environment environment = (Environment)frame.get(0);
+                        Environment environment = (Environment)frame.get(ordinal);
                         Object value = environment.load(code);
 
                         if(value != null) {

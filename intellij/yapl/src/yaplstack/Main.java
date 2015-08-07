@@ -951,13 +951,13 @@ public class Main {
 
                 tryCatch(block(
                     // Provoke exception - custom exception handler should be invoked
+                    bp,
                     invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("print", String.class), literal(false))
-                ), object(
-                    method("onException", new String[]{"frame, exception"}, block(
-                        calld("println", literal("Caught exception")),
-                        // Provoke exception - outer exception handler should be invoked
-                        invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("print", String.class), literal(false))
-                    ))
+                ), block(
+                    bp,
+                    calld("println", literal("Caught exception")),
+                    // Provoke exception - outer exception handler should be invoked
+                    invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("print", String.class), literal(false))
                 ))
             ));
         }

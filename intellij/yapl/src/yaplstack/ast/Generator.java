@@ -151,6 +151,10 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitObject(List<Slot> slots) {
+        return visitObject(slots, false);
+    }
+
+    public Void visitObject(List<Slot> slots, boolean forceFrameCapture) {
         emit(Instruction.Factory.newEnvironment);
 
         HashSet<MetaFrame> dependentContexts = new HashSet<>();
@@ -201,7 +205,7 @@ public class Generator implements AST.Visitor<Void> {
             });
         });
 
-        if(dependentContexts.size() > 0) {
+        if(forceFrameCapture || dependentContexts.size() > 0) {
             emit(Instruction.Factory.dup);
             emit(Instruction.Factory.loadCallFrame);
             emit(Instruction.Factory.store("__frame__"));
@@ -424,7 +428,7 @@ public class Generator implements AST.Visitor<Void> {
     @Override
     public Void visitLoadD(String name) {
         if(asExpression)
-            emit(Instruction.Factory.loadd(name));
+            emit(Instruction.Factory.loadd(name, 1 /*self*/));
 
         return null;
     }
@@ -484,6 +488,22 @@ public class Generator implements AST.Visitor<Void> {
     @Override
     public Void visitTryCatch(AST body, AST handler) {
         // Push new call frame with body as and handler as exception handler
+
+        expressionGenerator().visitObject(Arrays.asList(
+            AST.Factory.method("body", body),
+            AST.Factory.method("onException", new String[]{"frame", "exception"}, handler)
+        ), true);
+
+        emitLoadSelf();
+
+        emit(Instruction.Factory.dupx(1));
+
+        emit(Instruction.Factory.load(Selector.get("body", 0)));
+
+        emit(Instruction.Factory.pushCallFrame(1 + 1));
+
+        if(!asExpression)
+            emit(Instruction.Factory.pop);
 
         return null;
     }
@@ -708,8 +728,12 @@ public class Generator implements AST.Visitor<Void> {
         return null;
     }
 
+    private Generator expressionGenerator() {
+        return new Generator(true, functionScope, stagedInstructions, context);
+    }
+
     private void visitAsExpression(AST expression) {
-        Generator generator = new Generator(true, functionScope, stagedInstructions, context);
+        Generator generator = expressionGenerator();
         expression.accept(generator);
     }
 
