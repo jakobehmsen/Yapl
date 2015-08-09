@@ -486,12 +486,14 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
-    public Void visitTryCatch(AST body, AST handler) {
+    public Void visitTryCatch(AST body, String[] params, AST handler) {
         // Push new call frame with body as and handler as exception handler
+
+        // params.length is assumed to be 2
 
         expressionGenerator().visitObject(Arrays.asList(
             AST.Factory.method("body", body),
-            AST.Factory.method("onException", new String[]{"frame", "exception"}, handler)
+            AST.Factory.method("onException", params, handler)
         ), true);
 
         emitLoadSelf();

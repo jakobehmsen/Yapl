@@ -53,8 +53,7 @@ public interface AST extends Node {
         T visitAnd(AST lhs, AST rhs);
         T visitOr(AST lhs, AST rhs);
         T visitEval(AST target);
-
-        T visitTryCatch(AST body, AST handler);
+        T visitTryCatch(AST body, String[] params, AST handler);
 
         class Default<T> implements Visitor<T> {
             @Override
@@ -253,7 +252,7 @@ public interface AST extends Node {
             }
 
             @Override
-            public T visitTryCatch(AST body, AST handler) {
+            public T visitTryCatch(AST body, String[] params, AST handler) {
                 return null;
             }
         }
@@ -358,11 +357,11 @@ public interface AST extends Node {
             return local(Selector.get(name, params.length), fn(params, code));
         }
 
-        public static AST tryCatch(AST body, AST handler) {
+        public static AST tryCatch(AST body, String[] params, AST handler) {
             return new AST() {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
-                    return visitor.visitTryCatch(body, handler);
+                    return visitor.visitTryCatch(body, params, handler);
                 }
 
                 @Override
@@ -372,7 +371,7 @@ public interface AST extends Node {
 
                 @Override
                 public List<Node> getChildren() {
-                    return Arrays.asList(body, handler);
+                    return Arrays.asList(body, new Node.Atom(params), handler);
                 }
             };
         }

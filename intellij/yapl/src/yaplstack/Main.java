@@ -885,7 +885,7 @@ public class Main {
 
             SymbolTable symbolTable = new SymbolTable();
 
-            int onExceptionCode = symbolTable.getCode(Selector.get("on" + Throwable.class.getSimpleName(), 2));
+            int onExceptionCode = symbolTable.getCode(Selector.get("onException", 2));
             int frameCode = symbolTable.getCode("__frame__");
 
             /*
@@ -897,37 +897,19 @@ public class Main {
             */
 
             BiConsumer<Thread, Throwable> exceptionHandlerCode = (t, e) -> {
-                handleException(t, e, frameCode);
-
-                /*Environment exceptionHandler = (Environment)t.callFrame.get(0); // Exception handler is located in var 0
+                Environment exceptionHandler = (Environment)t.callFrame.get(0); // Exception handler is located in var 0
                 CallFrame exceptionHandlerFrame = (CallFrame)exceptionHandler.load(frameCode);
                 Environment exceptionHandlerExceptionHandler = (Environment)exceptionHandlerFrame.get(0);
                 Environment exceptionHandlerSelf = (Environment)exceptionHandlerFrame.get(1);
 
-                // Find handler
-                CodeSegment exceptionHandlerBody = null;
-                Class<?> exceptionClass = e.getClass();
-
-                while(!exceptionClass.equals(Object.class)) {
-                    int exceptionHandlerCode1 = symbolTable.getCode(Selector.get(exceptionClass.getSimpleName(), 2));
-                    exceptionHandlerBody = (CodeSegment) exceptionHandler.load(exceptionHandlerCode1);
-
-                    if(exceptionHandlerBody != null) {
-                        break;
-                    } else {
-                        exceptionClass = exceptionClass.getSuperclass();
-                        if(exceptionClass.equals(Object.class))
-                            exceptionClass = null;
-                    }
-                }
-
+                CodeSegment exceptionHandlerBody = (CodeSegment)exceptionHandler.load(onExceptionCode);
                 CallFrame exceptionFrame = new CallFrame(exceptionHandlerFrame.outer, exceptionHandlerBody);
                 exceptionFrame.push(exceptionHandlerExceptionHandler);
                 exceptionFrame.push(exceptionHandlerSelf);
                 exceptionFrame.push(t.callFrame); // Frame is first argument
                 exceptionFrame.push(e); // Exception is second argument
 
-                t.callFrame = exceptionFrame;*/
+                t.callFrame = exceptionFrame;
             };
 
             CodeSegment codeSegment = Generator.toInstructions(program);
@@ -960,43 +942,6 @@ public class Main {
         System.out.println("Elapsed: " + elapsed + "ms");
     }
 
-    private static void handleException(Thread t, Throwable e, int frameCode) {
-        Environment exceptionHandler = (Environment)t.callFrame.get(0); // Exception handler is located in var 0
-        CallFrame exceptionHandlerFrame = (CallFrame)exceptionHandler.load(frameCode);
-        Environment exceptionHandlerExceptionHandler = (Environment)exceptionHandlerFrame.get(0);
-        Environment exceptionHandlerSelf = (Environment)exceptionHandlerFrame.get(1);
-
-        // Find handler
-        CodeSegment exceptionHandlerBody = null;
-        Class<?> exceptionClass = e.getClass();
-
-        while(!exceptionClass.equals(Object.class)) {
-            int exceptionHandlerCode1 = t.symbolTable.getCode(Selector.get("on" + exceptionClass.getSimpleName(), 2));
-            exceptionHandlerBody = (CodeSegment) exceptionHandler.load(exceptionHandlerCode1);
-
-            if(exceptionHandlerBody != null) {
-                break;
-            } else {
-                exceptionClass = exceptionClass.getSuperclass();
-                if(exceptionClass.equals(Object.class))
-                    exceptionClass = null;
-            }
-        }
-
-        if(exceptionHandlerBody != null) {
-            CallFrame exceptionFrame = new CallFrame(exceptionHandlerFrame.outer, exceptionHandlerBody);
-            exceptionFrame.push(exceptionHandlerExceptionHandler);
-            exceptionFrame.push(exceptionHandlerSelf);
-            exceptionFrame.push(t.callFrame); // Frame is first argument
-            exceptionFrame.push(e); // Exception is second argument
-
-            t.callFrame = exceptionFrame;
-        } else {
-            t.callFrame = exceptionHandlerFrame;
-            handleException(t, e, frameCode);
-        }
-    }
-
     private static AST ast() throws Exception {
         if(1 != 2) {
             return program(block(
@@ -1006,12 +951,12 @@ public class Main {
 
                 tryCatch(block(
                     // Provoke exception - custom exception handler should be invoked
-                    bp,
                     invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("print", String.class), literal(false))
-                ), /*Parameter names should be supplied*/ block(
-                    bp,
+                ), new String[]{"frame", "exception"}, block(
                     calld("println", literal("Caught exception")),
+                    calld("println", invoke(load("exception"), Exception.class.getMethod("getMessage"))),
                     // Provoke exception - outer exception handler should be invoked
+
                     invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("print", String.class), literal(false))
                 ))
             ));
