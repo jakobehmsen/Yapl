@@ -34,12 +34,16 @@ public class Generator implements AST.Visitor<Void> {
         return context;
     }
 
+    private static final int STACK_BASE_SIZE = 2; /* exception handler and selfs*/
+    private static final int EXCEPTION_HANDLER_ORDINAL = 0;
+    private static final int SELF_ORDINAL = 1;
+
     public void emitLoadExceptionHandler() {
-        emit(Instruction.Factory.loadVar(0));
+        emit(Instruction.Factory.loadVar(EXCEPTION_HANDLER_ORDINAL));
     }
 
     public void emitLoadSelf() {
-        emit(Instruction.Factory.loadVar(1));
+        emit(Instruction.Factory.loadVar(SELF_ORDINAL));
     }
 
     public Generator(boolean asExpression, boolean functionScope, List<TwoStageGenerator> stagedInstructions, MetaFrame context) {
@@ -119,7 +123,15 @@ public class Generator implements AST.Visitor<Void> {
         boolean useSpecial = false;
 
         if(!useSpecial) {
-            visitAsExpression(target);
+            emitLoadExceptionHandler(); // Keep exception handler
+            visitAsExpression(target); // New self
+
+
+            /*emit(Instruction.Factory.dup);
+            emit(Instruction.Factory.load(Selector.get(name, arguments.size())));
+
+            arguments.forEach(x -> visitAsExpression(x));*/
+
 
             if (arguments.size() > 0) {
                 arguments.forEach(x -> visitAsExpression(x));
@@ -130,7 +142,9 @@ public class Generator implements AST.Visitor<Void> {
 
             emit(Instruction.Factory.load(Selector.get(name, arguments.size())));
 
-            emit(Instruction.Factory.pushCallFrame(1 + 1 + arguments.size()));
+
+            // Keep exception handler, but overwrite self
+            emit(Instruction.Factory.pushCallFrame(STACK_BASE_SIZE + arguments.size()));
 
             if (!asExpression)
                 emit(Instruction.Factory.pop);
@@ -194,7 +208,7 @@ public class Generator implements AST.Visitor<Void> {
                     generator.emit(Instruction.Factory.popCallFrame(1));
 
                     Instruction[] instructionArray = generator.generate();
-                    int maxStackSize = maxStackSize(1 /*exception handler*/ + 1 /*self*/ + params.size(), instructionArray, 0);
+                    int maxStackSize = maxStackSize(STACK_BASE_SIZE + params.size(), instructionArray, 0);
                     CodeSegment codeSegment = new CodeSegment(maxStackSize, instructionArray, x);
 
                     emit(Instruction.Factory.loadConst(codeSegment));
@@ -428,7 +442,7 @@ public class Generator implements AST.Visitor<Void> {
     @Override
     public Void visitLoadD(String name) {
         if(asExpression)
-            emit(Instruction.Factory.loadd(name, 1 /*self*/));
+            emit(Instruction.Factory.loadd(name, SELF_ORDINAL));
 
         return null;
     }
@@ -502,7 +516,7 @@ public class Generator implements AST.Visitor<Void> {
 
         emit(Instruction.Factory.load(Selector.get("body", 0)));
 
-        emit(Instruction.Factory.pushCallFrame(1 + 1));
+        emit(Instruction.Factory.pushCallFrame(STACK_BASE_SIZE));
 
         if(!asExpression)
             emit(Instruction.Factory.pop);
@@ -657,7 +671,7 @@ public class Generator implements AST.Visitor<Void> {
                         emit(Instruction.Factory.dup);
                     emit(Instruction.Factory.storeVar(ordinal));
                 } else if (distance > 0) {
-                    emit(Instruction.Factory.loadVar(0));
+                    emit(Instruction.Factory.loadVar(SELF_ORDINAL));
                     emit(Instruction.Factory.load("__frame__"));
 
                     MetaFrame current = context;
@@ -665,7 +679,7 @@ public class Generator implements AST.Visitor<Void> {
                     for (int i = 1; i < distance; i++) {
                         current.isDependent = true;
                         current = current.context;
-                        emit(Instruction.Factory.frameLoadVar(0));
+                        emit(Instruction.Factory.frameLoadVar(SELF_ORDINAL));
                         emit(Instruction.Factory.load("__frame__"));
                     }
 
@@ -714,7 +728,7 @@ public class Generator implements AST.Visitor<Void> {
                     if (distance == 0) {
                         emit(Instruction.Factory.loadVar(ordinal));
                     } else if (distance > 0) {
-                        emit(Instruction.Factory.loadVar(0));
+                        emit(Instruction.Factory.loadVar(SELF_ORDINAL));
                         emit(Instruction.Factory.load("__frame__"));
 
                         MetaFrame current = context;
@@ -722,7 +736,7 @@ public class Generator implements AST.Visitor<Void> {
                         for (int i = 1; i < distance; i++) {
                             current.isDependent = true;
                             current = current.context;
-                            emit(Instruction.Factory.frameLoadVar(0));
+                            emit(Instruction.Factory.frameLoadVar(SELF_ORDINAL));
                             emit(Instruction.Factory.load("__frame__"));
                         }
 

@@ -623,6 +623,14 @@ public interface Instruction {
                         throw new NullPointerException();
                     thread.callFrame = new CallFrame(thread.callFrame, codeSegment);
                     thread.callFrame.outer.pushTo(thread.callFrame, pushCount);
+
+                    /*CodeSegment codeSegment = (CodeSegment)thread.callFrame.peek(pushCount);
+                    if(codeSegment == null)
+                        throw new NullPointerException();
+                    CallFrame callFrame = new CallFrame(thread.callFrame, codeSegment);
+                    thread.callFrame.pushTo(callFrame, pushCount);
+                    thread.callFrame.pop();
+                    thread.callFrame = callFrame;*/
                 }
 
                 @Override

@@ -943,11 +943,10 @@ public class Main {
     }
 
     private static AST ast() throws Exception {
-        if(1 != 2) {
-            /*
-            TODO:
-            - Support emitting custom exceptions
-            */
+        /*if(1 != 2) {
+
+            //TODO:
+            //- Support emitting custom exceptions
 
             return program(block(
                 local("errorMsg1", literal("IllegalArgumentException1")),
@@ -990,7 +989,7 @@ public class Main {
                     invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("print", String.class), literal(false))
                 ))
             ));
-        }
+        }*/
 
         String sourceCode =
             "(muli (muli 2 3) 4)\n" +
@@ -1103,16 +1102,18 @@ public class Main {
                 ))
             )),
 
-            defun("chars", new String[]{"reader"}, fn(new String[]{"m"}, block(
-                local("b", literal(0)),
-                loop(
-                    not(eqi(store("b", invoke(load("reader"), Reader.class.getMethod("read"))), literal(-1))),
-                    block(
-                        local("ch", load("b")),
-                        send(load("m"), "yield", itoc(load("ch")))
-                    )
-                )))
-            ),
+            defun("chars", new String[]{"reader"}, block(
+                fn(new String[]{"m"}, block(
+                    local("b", literal(0)),
+                    loop(
+                        not(eqi(store("b", invoke(load("reader"), Reader.class.getMethod("read"))), literal(-1))),
+                        block(
+                            local("ch", load("b")),
+                            send(load("m"), "yield", itoc(load("ch")))
+                        )
+                    ))
+                )
+            )),
 
             defun("tokens", new String[]{"chars"}, fn(new String[]{"m"}, block(
                 defun("ignore", block(
