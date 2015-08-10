@@ -901,6 +901,27 @@ public interface Instruction {
             };
         }
 
+        public static IncIP instanceOf(Class<?> c) {
+            return new IncIP() {
+                @Override
+                public void doEval(Thread thread) throws Throwable {
+                    Object value = thread.callFrame.pop();
+                    boolean isInstance = c.isInstance(value);
+                    thread.callFrame.push(isInstance);
+                }
+
+                @Override
+                public int popCount() {
+                    return 1;
+                }
+
+                @Override
+                public int pushCount() {
+                    return 1;
+                }
+            };
+        }
+
         public static Instruction haltException = new Instruction() {
             @Override
             public void eval(Thread thread) throws Throwable {

@@ -511,6 +511,18 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
+    public Void instanceOf(AST target, Class<?> c) {
+        visitAsExpression(target);
+
+        emit(Instruction.Factory.instanceOf(c));
+
+        if(!asExpression)
+            emit(Instruction.Factory.pop);
+
+        return null;
+    }
+
+    @Override
     public Void visitNewInstance(Constructor constructor, List<AST> args) {
         args.forEach(x -> visitAsExpression(x));
         emit(Instruction.Factory.newInstance(constructor));

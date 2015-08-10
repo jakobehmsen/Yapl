@@ -944,18 +944,48 @@ public class Main {
 
     private static AST ast() throws Exception {
         if(1 != 2) {
+            /*
+            TODO:
+            - Support emitting custom exceptions
+            */
+
             return program(block(
+                local("errorMsg1", literal("IllegalArgumentException1")),
+                local("errorMsg2", literal("IllegalArgumentException2")),
+
                 defun("println", new String[]{"str"},
                     invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("println", String.class), invoke(load("str"), Object.class.getMethod("toString")))
                 ),
 
                 tryCatch(block(
-                    // Provoke exception - custom exception handler should be invoked
-                    invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("print", String.class), literal(false))
+                    //// Provoke exception - custom exception handler should be invoked
+                    //invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("print", String.class), literal(false))
+
+
+                    tryCatch(block(
+                        // Provoke exception - custom exception handler should be invoked
+                        invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("print", String.class), literal(false))
+                    ), new String[]{"frame", "exception"}, block(
+                        calld("println", literal("Caught exception")),
+                        calld("println", invoke(load("exception"), Exception.class.getMethod("getMessage"))),
+                        // Provoke exception - outer exception handler should be invoked
+
+                        test(instanceOf(load("exception"), IllegalArgumentException.class),
+                            calld("println", load("errorMsg1"))
+                        ),
+
+                        invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("print", String.class), literal(false))
+                    ))
+
+
                 ), new String[]{"frame", "exception"}, block(
                     calld("println", literal("Caught exception")),
                     calld("println", invoke(load("exception"), Exception.class.getMethod("getMessage"))),
                     // Provoke exception - outer exception handler should be invoked
+
+                    test(instanceOf(load("exception"), IllegalArgumentException.class),
+                        calld("println", load("errorMsg2"))
+                    ),
 
                     invoke(fieldGet(System.class.getField("out")), PrintStream.class.getMethod("print", String.class), literal(false))
                 ))

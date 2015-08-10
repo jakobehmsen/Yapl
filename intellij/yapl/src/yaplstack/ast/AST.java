@@ -54,6 +54,7 @@ public interface AST extends Node {
         T visitOr(AST lhs, AST rhs);
         T visitEval(AST target);
         T visitTryCatch(AST body, String[] params, AST handler);
+        T instanceOf(AST target, Class<?> c);
 
         class Default<T> implements Visitor<T> {
             @Override
@@ -253,6 +254,11 @@ public interface AST extends Node {
 
             @Override
             public T visitTryCatch(AST body, String[] params, AST handler) {
+                return null;
+            }
+
+            @Override
+            public T instanceOf(AST target, Class<?> c) {
                 return null;
             }
         }
@@ -916,6 +922,25 @@ public interface AST extends Node {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
                     return visitor.visitFieldSet(target, field, value);
+                }
+            };
+        }
+
+        public static AST instanceOf(AST target, Class<?> c) {
+            return new AST() {
+                @Override
+                public String getName() {
+                    return "instanceOf";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(target, new Node.Atom(c));
+                }
+
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.instanceOf(target, c);
                 }
             };
         }
