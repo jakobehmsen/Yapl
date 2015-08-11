@@ -1352,8 +1352,7 @@ public class Main {
                         calld("println", literal("IllegalArgumentException"))
                     ),
                     //invoke(load("exception"), Exception.class.getMethod("printStackTrace")),
-                    send(load("tokensGen"), "consume"),
-                    bp
+                    send(load("tokensGen"), "consume")
                 ))
             ))
 
