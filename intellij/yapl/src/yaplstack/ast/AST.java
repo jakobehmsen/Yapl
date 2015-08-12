@@ -56,6 +56,10 @@ public interface AST extends Node {
         T visitTryCatch(AST body, String[] params, AST handler);
         T instanceOf(AST target, Class<?> c);
 
+        T visitTryCatch(AST body, List<AST> catchCases);
+
+        T visitCatchCase(String selector, List<String> params, AST handler);
+
         class Default<T> implements Visitor<T> {
             @Override
             public T visitProgram(AST code) {
@@ -261,6 +265,16 @@ public interface AST extends Node {
             public T instanceOf(AST target, Class<?> c) {
                 return null;
             }
+
+            @Override
+            public T visitTryCatch(AST body, List<AST> catchCases) {
+                return null;
+            }
+
+            @Override
+            public T visitCatchCase(String selector, List<String> params, AST handler) {
+                return null;
+            }
         }
     }
 
@@ -378,6 +392,44 @@ public interface AST extends Node {
                 @Override
                 public List<Node> getChildren() {
                     return Arrays.asList(body, new Node.Atom(params), handler);
+                }
+            };
+        }
+
+        public static AST tryCatch(AST body, AST... catchCases) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitTryCatch(body, Arrays.asList(catchCases));
+                }
+
+                @Override
+                public String getName() {
+                    return "tryCatch";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(body, new Node.Atom(catchCases));
+                }
+            };
+        }
+
+        public static AST catchCase(String selector, String[] params, AST handler) {
+            return new AST() {
+                @Override
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitCatchCase(selector, Arrays.asList(params), handler);
+                }
+
+                @Override
+                public String getName() {
+                    return "tryCatch";
+                }
+
+                @Override
+                public List<Node> getChildren() {
+                    return Arrays.asList(new Node.Atom(selector), new Node.Atom(params), handler);
                 }
             };
         }
