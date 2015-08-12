@@ -438,7 +438,7 @@ public interface AST extends Node {
             return new Slot() {
                 @Override
                 public String getName() {
-                    return "method";
+                    return "field";
                 }
 
                 @Override
