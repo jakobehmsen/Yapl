@@ -58,7 +58,7 @@ public interface AST extends Node {
 
         T visitTryCatch(AST body, List<AST> catchCases);
 
-        T visitCatchCase(String selector, List<String> params, AST handler);
+        T visitCatchCase(String name, List<String> params, AST handler);
 
         class Default<T> implements Visitor<T> {
             @Override
@@ -272,7 +272,7 @@ public interface AST extends Node {
             }
 
             @Override
-            public T visitCatchCase(String selector, List<String> params, AST handler) {
+            public T visitCatchCase(String name, List<String> params, AST handler) {
                 return null;
             }
         }
@@ -415,11 +415,11 @@ public interface AST extends Node {
             };
         }
 
-        public static AST catchCase(String selector, String[] params, AST handler) {
+        public static AST catchCase(String name, String[] params, AST handler) {
             return new AST() {
                 @Override
                 public <T> T accept(Visitor<T> visitor) {
-                    return visitor.visitCatchCase(selector, Arrays.asList(params), handler);
+                    return visitor.visitCatchCase(name, Arrays.asList(params), handler);
                 }
 
                 @Override
@@ -429,7 +429,7 @@ public interface AST extends Node {
 
                 @Override
                 public List<Node> getChildren() {
-                    return Arrays.asList(new Node.Atom(selector), new Node.Atom(params), handler);
+                    return Arrays.asList(new Node.Atom(name), new Node.Atom(params), handler);
                 }
             };
         }

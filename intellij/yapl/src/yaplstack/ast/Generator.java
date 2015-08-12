@@ -542,7 +542,7 @@ public class Generator implements AST.Visitor<Void> {
     }
 
     @Override
-    public Void visitCatchCase(String selector, List<String> params, AST handler) {
+    public Void visitCatchCase(String name, List<String> params, AST handler) {
         return null;
     }
 
