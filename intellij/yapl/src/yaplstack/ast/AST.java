@@ -447,8 +447,8 @@ public interface AST extends Node {
                 }
 
                 @Override
-                public void accept(Visitor visitor) {
-                    visitor.visitField(name, value);
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitField(name, value);
                 }
             };
         }
@@ -470,8 +470,8 @@ public interface AST extends Node {
                 }
 
                 @Override
-                public void accept(Visitor visitor) {
-                    visitor.visitMethod(name, Arrays.asList(parameters), body);
+                public <T> T accept(Visitor<T> visitor) {
+                    return visitor.visitMethod(name, Arrays.asList(parameters), body);
                 }
             };
         }

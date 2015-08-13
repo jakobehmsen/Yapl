@@ -174,19 +174,23 @@ public class Generator implements AST.Visitor<Void> {
         HashSet<MetaFrame> dependentContexts = new HashSet<>();
 
         slots.forEach(x -> {
-            x.accept(new Slot.Visitor() {
+            x.accept(new Slot.Visitor<Void>() {
                 @Override
-                public void visitField(String name, AST value) {
+                public Void visitField(String name, AST value) {
                     emit(Instruction.Factory.dup);
                     visitAsExpression(value);
                     emit(Instruction.Factory.store(name));
+
+                    return null;
                 }
 
                 @Override
-                public void visitMethod(String name, List<String> parameters, AST body) {
+                public Void visitMethod(String name, List<String> parameters, AST body) {
                     emit(Instruction.Factory.dup);
                     visitMethodContent(parameters, body);
                     emit(Instruction.Factory.store(Selector.get(name, parameters.size())));
+
+                    return null;
                 }
 
                 private void visitMethodContent(List<String> params, AST code) {
@@ -538,6 +542,41 @@ public class Generator implements AST.Visitor<Void> {
 
     @Override
     public Void visitTryCatch(AST body, List<AST> catchCases) {
+        // Add default handler for onException :frame :exception if necessary
+        ArrayList<Slot> slots = new ArrayList<>();
+
+        slots.add(AST.Factory.method("body", body));
+
+        catchCases.forEach(cc -> cc.accept(new AST.Visitor.Default<Void>() {
+            @Override
+            public Void visitCatchCase(String name, List params, AST handler) {
+
+
+                return null;
+            }
+        }));
+
+        boolean understandsOnException2 = slots.stream().anyMatch(x -> x.accept(new Slot.Visitor<Boolean>() {
+            @Override
+            public Boolean visitField(String name, AST value) {
+                return false;
+            }
+
+            @Override
+            public Boolean visitMethod(String name, List<String> parameters, AST body) {
+                return name.equals("onException") && parameters.size() == 2;
+            }
+        }).booleanValue());
+
+        if(!understandsOnException2) {
+            // Add default handler for onException :frame :exception
+
+            slots.add(AST.Factory.method("onException", new String[]{"frame", "exception"}, AST.Factory.block(
+                // Forward message onException :frame :exception to next exception handler
+                // This requires a new AST type; signal(name, parameters)
+            )));
+        }
+
         return null;
     }
 

@@ -3,10 +3,10 @@ package yaplstack.ast;
 import java.util.List;
 
 public interface Slot extends Node {
-    interface Visitor {
-        void visitField(String name, AST value);
-        void visitMethod(String name, List<String> parameters, AST body);
+    interface Visitor<T> {
+        T visitField(String name, AST value);
+        T visitMethod(String name, List<String> parameters, AST body);
     }
 
-    void accept(Visitor visitor);
+    <T> T accept(Visitor<T> visitor);
 }
