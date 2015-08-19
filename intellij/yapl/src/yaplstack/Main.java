@@ -1343,7 +1343,7 @@ public class Main {
                         store("atEndOfStream", literal(true))
                     )
                 ), new String[]{"frame", "exception"}, block(
-                    // IllegalArgumentException is throw because no is a boolean
+                    // IllegalArgumentException is thrown because node is a boolean
                     calld("println", literal("Caught exception")),
                     calld("println", invoke(load("exception"), Exception.class.getMethod("getMessage"))),
                     // Provoke exception - outer exception handler should be invoked
@@ -1353,7 +1353,31 @@ public class Main {
                     ),
                     //invoke(load("exception"), Exception.class.getMethod("printStackTrace")),
                     send(load("tokensGen"), "consume")
-                ))
+                )),
+
+                tryCatch(block(
+                    local("node", send(load("nodesGen"), "next")),
+                    test(
+                        send(load("nodesGen"), "hadNext"),
+                        block(
+                            local("nodeAsCode", invoke(Generator.class.getMethod("toEvalInstructions", AST.class), load("node"))),
+                            local("evalResult", eval(load("nodeAsCode"))),
+                            call("println", load("evalResult"))
+                        ),
+                        store("atEndOfStream", literal(true))
+                    )
+                ), catchCase("exception", new String[]{"frame", "exception"}, block(
+                    // IllegalArgumentException is thrown because node is a boolean
+                    calld("println", literal("Caught exception")),
+                    calld("println", invoke(load("exception"), Exception.class.getMethod("getMessage"))),
+                    // Provoke exception - outer exception handler should be invoked
+
+                    test(instanceOf(load("exception"), IllegalArgumentException.class),
+                        calld("println", literal("IllegalArgumentException"))
+                    ),
+                    //invoke(load("exception"), Exception.class.getMethod("printStackTrace")),
+                    send(load("tokensGen"), "consume")
+                )))
             ))
 
 
