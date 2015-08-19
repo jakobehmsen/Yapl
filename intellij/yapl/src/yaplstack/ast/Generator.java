@@ -549,8 +549,8 @@ public class Generator implements AST.Visitor<Void> {
 
         catchCases.forEach(cc -> cc.accept(new AST.Visitor.Default<Void>() {
             @Override
-            public Void visitCatchCase(String name, List params, AST handler) {
-
+            public Void visitCatchCase(String name, List<String> params, AST handler) {
+                slots.add(AST.Factory.method(name, params.toArray(new String[params.size()]), handler));
 
                 return null;
             }

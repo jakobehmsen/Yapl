@@ -1366,7 +1366,7 @@ public class Main {
                         ),
                         store("atEndOfStream", literal(true))
                     )
-                ), catchCase("exception", new String[]{"frame", "exception"}, block(
+                ), catchCase("onException", new String[]{"frame", "exception"}, block(
                     // IllegalArgumentException is thrown because node is a boolean
                     calld("println", literal("Caught exception")),
                     calld("println", invoke(load("exception"), Exception.class.getMethod("getMessage"))),
